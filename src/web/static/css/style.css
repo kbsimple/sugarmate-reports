@@ -1,0 +1,95 @@
+/* CGM Insights - Custom Styles */
+
+/* Dropzone styling */
+.dropzone {
+    transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+    border-color: oklch(var(--p));
+    background-color: oklch(var(--p) / 0.05);
+}
+
+.dropzone.dragover {
+    border-color: oklch(var(--p));
+    background-color: oklch(var(--p) / 0.1);
+}
+
+/* Chart container sizing */
+.chart-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* AGP Report print styles */
+@media print {
+    body {
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .page-break {
+        page-break-before: always;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    .navbar, .footer {
+        display: none !important;
+    }
+}
+
+/* Stat cards hover effect */
+.stat {
+    transition: transform 0.2s ease;
+}
+
+.stat:hover {
+    transform: translateY(-2px);
+}
+
+/* Progress bar animation */
+.progress {
+    transition: width 0.5s ease;
+}
+
+/* Loading overlay */
+#loading-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: oklch(var(--b3) / 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Toast positioning */
+.toast {
+    z-index: 10000;
+}
+
+/* Table responsiveness */
+.table {
+    width: 100%;
+}
+
+@media (max-width: 640px) {
+    .table th,
+    .table td {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+}

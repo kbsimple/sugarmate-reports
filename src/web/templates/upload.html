@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Upload - CGM Insights{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h1 class="card-title text-2xl mb-4">Upload Your CGM Data</h1>
+            <p class="text-base-content/70 mb-6">
+                Upload a CSV or Excel file from your CGM device or app (Sugarmate, Dexcom, Libre, etc.)
+                to receive personalized insights about your glucose patterns.
+            </p>
+
+            <!-- Upload Form -->
+            <form
+                id="upload-form"
+                hx-post="/api/upload"
+                hx-encoding="multipart/form-data"
+                hx-target="#result"
+                hx-indicator="#loading-indicator"
+            >
+                <!-- Drag-drop zone -->
+                <div
+                    class="dropzone border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                    x-data="{ dragging: false }"
+                    @dragover.prevent="dragging = true"
+                    @dragleave.prevent="dragging = false"
+                    @drop.prevent="dragging = false; $refs.fileInput.files = $event.dataTransfer.files;"
+                    :class="{ 'border-primary bg-primary/5': dragging }"
+                    @click="$refs.fileInput.click()"
+                >
+                    <input
+                        type="file"
+                        name="file"
+                        accept=".csv,.xlsx,.xls"
+                        class="hidden"
+                        x-ref="fileInput"
+                        required
+                        @change="if ($refs.fileInput.files.length) $dispatch('file-selected')"
+                    >
+
+                    <div class="flex flex-col items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="text-base-content/70" x-text="$refs.fileInput.files.length ? $refs.fileInput.files[0].name : 'Drag and drop your file here, or click to browse'"></p>
+                        <p class="text-sm text-base-content/50">Supported formats: CSV, XLSX, XLS (max 10MB)</p>
+                    </div>
+                </div>
+
+                <!-- Date range options -->
+                <div class="divider">Optional Filters</div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Start Date</span>
+                        </label>
+                        <input
+                            type="date"
+                            name="start_date"
+                            class="input input-bordered"
+                            placeholder="YYYY-MM-DD"
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">End Date</span>
+                        </label>
+                        <input
+                            type="date"
+                            name="end_date"
+                            class="input input-bordered"
+                            placeholder="YYYY-MM-DD"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-control mt-4">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">Exclude sensor warmup period (first 2 hours)</span>
+                        <input type="checkbox" name="exclude_warmup" class="checkbox checkbox-primary" checked>
+                    </label>
+                </div>
+
+                <!-- Submit button -->
+                <div class="card-actions justify-end mt-6">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="loading loading-spinner hidden"></span>
+                        Analyze My Data
+                    </button>
+                </div>
+            </form>
+
+            <!-- Error display -->
+            <div id="error-container" class="alert alert-error mt-4" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="error-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result container for HTMX -->
+    <div id="result"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // HTMX error handling
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        document.getElementById('error-container').style.display = 'none';
+    });
+
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        const errorContainer = document.getElementById('error-container');
+        const errorText = document.getElementById('error-text');
+
+        try {
+            const response = JSON.parse(evt.detail.xhr.responseText);
+            errorText.textContent = response.detail || 'An error occurred. Please try again.';
+        } catch (e) {
+            errorText.textContent = 'An error occurred. Please try again.';
+        }
+
+        errorContainer.style.display = 'block';
+    });
+
+    // Redirect on successful upload
+    document.body.addEventListener('htmx:beforeSwap', function(evt) {
+        if (evt.detail.xhr.status === 200) {
+            try {
+                const response = JSON.parse(evt.detail.xhr.responseText);
+                if (response.redirect) {
+                    window.location.href = response.redirect;
+                }
+            } catch (e) {
+                // Not JSON, let HTMX handle normally
+            }
+        }
+    });
+</script>
+{% endblock %}

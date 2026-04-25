@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Results - CGM Insights{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h1 class="card-title text-2xl mb-4">Your Glucose Analysis</h1>
+
+            <!-- Session info -->
+            <p class="text-sm text-base-content/50 mb-4">Session: {{ session_id }}</p>
+
+            <!-- Date range -->
+            <div class="bg-base-200 rounded-lg p-4 mb-6">
+                <h2 class="font-semibold mb-2">Analysis Period</h2>
+                <p>{{ results.date_range_start.strftime('%Y-%m-%d') }} to {{ results.date_range_end.strftime('%Y-%m-%d') }}</p>
+                <p class="text-sm text-base-content/70">{{ results.total_readings }} readings analyzed</p>
+                {% if results.sensor_warmup_excluded %}
+                <p class="text-sm text-base-content/50">(Sensor warmup period excluded)</p>
+                {% endif %}
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="stat bg-base-200 rounded-lg">
+                    <div class="stat-title">Time in Target</div>
+                    <div class="stat-value text-success">{{ "%.1f"|format(results.time_in_range.target_pct) }}%</div>
+                    <div class="stat-desc">70-180 mg/dL</div>
+                </div>
+
+                <div class="stat bg-base-200 rounded-lg">
+                    <div class="stat-title">Average Glucose</div>
+                    <div class="stat-value">{{ "%.0f"|format(results.average_glucose) }}</div>
+                    <div class="stat-desc">mg/dL</div>
+                </div>
+
+                <div class="stat bg-base-200 rounded-lg">
+                    <div class="stat-title">GMI</div>
+                    <div class="stat-value">{{ "%.1f"|format(results.gmi) }}%</div>
+                    <div class="stat-desc">Glucose Management Indicator</div>
+                </div>
+            </div>
+
+            <!-- Time in Range Breakdown -->
+            <div class="mb-6">
+                <h2 class="font-semibold mb-3">Time in Range Breakdown</h2>
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Range</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-error">Very Low (&lt;54 mg/dL)</td>
+                                <td>{{ "%.1f"|format(results.time_in_range.very_low_pct) }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="text-warning">Low (54-70 mg/dL)</td>
+                                <td>{{ "%.1f"|format(results.time_in_range.low_pct) }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="text-success">Target (70-180 mg/dL)</td>
+                                <td>{{ "%.1f"|format(results.time_in_range.target_pct) }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="text-warning">High (180-250 mg/dL)</td>
+                                <td>{{ "%.1f"|format(results.time_in_range.high_pct) }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="text-error">Very High (&gt;250 mg/dL)</td>
+                                <td>{{ "%.1f"|format(results.time_in_range.very_high_pct) }}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Variability -->
+            <div class="mb-6">
+                <h2 class="font-semibold mb-3">Glucose Variability</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-base-200 rounded-lg p-4">
+                        <p class="text-sm text-base-content/70">Standard Deviation</p>
+                        <p class="text-xl font-semibold">{{ "%.1f"|format(results.glucose_std) }} mg/dL</p>
+                    </div>
+                    <div class="bg-base-200 rounded-lg p-4">
+                        <p class="text-sm text-base-content/70">Coefficient of Variation</p>
+                        <p class="text-xl font-semibold">{{ "%.1f"|format(results.cv_pct) }}%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Quality -->
+            {% if results.data_quality_flags %}
+            <div class="alert alert-warning mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                    <h3 class="font-semibold">Data Quality Notes</h3>
+                    <ul class="list-disc list-inside text-sm">
+                        {% for flag in results.data_quality_flags %}
+                        <li>{{ flag }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Completeness -->
+            <div class="mb-6">
+                <div class="flex justify-between mb-2">
+                    <span>Data Completeness</span>
+                    <span>{{ "%.1f"|format(results.completeness_pct) }}%</span>
+                </div>
+                <progress class="progress progress-primary w-full" value="{{ results.completeness_pct }}" max="100"></progress>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="bg-base-200 rounded-lg p-4 text-sm text-base-content/70">
+                <p><strong>Wellness Information Only:</strong> These results are for informational purposes only
+                and are not medical advice. GMI estimates may not match lab A1C for 25-30% of people.
+                Always discuss glucose management with your healthcare provider.</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions justify-end mt-6">
+                <a href="/upload" class="btn btn-outline">Analyze Another File</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
