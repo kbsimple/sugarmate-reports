@@ -9,11 +9,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data Import
 
-- [ ] **DATA-01**: User can upload Sugarmate Excel export files
+- [x] **DATA-01**: User can upload Sugarmate Excel export files
 - [x] **DATA-02**: System parses glucose readings, timestamps, and trends from uploaded file
 - [x] **DATA-03**: System validates data completeness and flags gaps/missing readings
-- [ ] **DATA-04**: System detects and handles sensor warm-up periods (first 2 hours typically inaccurate)
-- [ ] **DATA-05**: User can select date range for analysis (7, 14, 30, 90 days + custom)
+- [x] **DATA-04**: System detects and handles sensor warm-up periods (first 2 hours typically inaccurate)
+- [x] **DATA-05**: User can select date range for analysis (7, 14, 30, 90 days + custom)
 
 ### Core Metrics
 
@@ -77,11 +77,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
-| DATA-04 | Phase 1 | Pending |
-| DATA-05 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Complete |
+| DATA-05 | Phase 1 | Complete |
 | METR-01 | Phase 1 | Complete |
 | METR-02 | Phase 1 | Complete |
 | METR-03 | Phase 1 | Complete |

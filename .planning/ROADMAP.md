@@ -86,7 +86,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Analysis Library | 4/4 | Planned | - |
+| 1. Core Analysis Library | 3/4 | In Progress | 01-01, 01-02, 01-03 |
 | 2. CLI Tool + Insights | 0/3 | Not started | - |
 | 3. Web Interface + Reports | 0/3 | Not started | - |
 
