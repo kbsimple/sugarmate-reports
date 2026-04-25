@@ -14,7 +14,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 ## Phases
 
-- [ ] **Phase 1: Core Analysis Library** - Foundation data pipeline with validated metrics, reusable as independent library
+- [x] **Phase 1: Core Analysis Library** - Foundation data pipeline with validated metrics, reusable as independent library
 - [ ] **Phase 2: CLI Tool + Insights** - Command-line interface validates core library, visualization and pattern detection
 - [ ] **Phase 3: Web Interface + Reports** - Browser-based upload with interactive dashboard and AGP report export
 
@@ -86,7 +86,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Analysis Library | 3/4 | In Progress | 01-01, 01-02, 01-03 |
+| 1. Core Analysis Library | 4/4 | Complete | 01-01, 01-02, 01-03, 01-04 |
 | 2. CLI Tool + Insights | 0/3 | Not started | - |
 | 3. Web Interface + Reports | 0/3 | Not started | - |
 
@@ -116,16 +116,16 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Planned (01-03) |
-| DATA-02 | Phase 1 | Planned (01-02, 01-03) |
-| DATA-03 | Phase 1 | Planned (01-03) |
-| DATA-04 | Phase 1 | Planned (01-03) |
-| DATA-05 | Phase 1 | Planned (01-03) |
-| METR-01 | Phase 1 | Planned (01-04) |
-| METR-02 | Phase 1 | Planned (01-04) |
-| METR-03 | Phase 1 | Planned (01-04) |
-| METR-04 | Phase 1 | Planned (01-04) |
-| METR-05 | Phase 1 | Planned (01-04) |
+| DATA-01 | Phase 1 | Complete (01-03) |
+| DATA-02 | Phase 1 | Complete (01-02, 01-03) |
+| DATA-03 | Phase 1 | Complete (01-03) |
+| DATA-04 | Phase 1 | Complete (01-03) |
+| DATA-05 | Phase 1 | Complete (01-03) |
+| METR-01 | Phase 1 | Complete (01-04) |
+| METR-02 | Phase 1 | Complete (01-04) |
+| METR-03 | Phase 1 | Complete (01-04) |
+| METR-04 | Phase 1 | Complete (01-04) |
+| METR-05 | Phase 1 | Complete (01-04) |
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 2 | Pending |
 | VIZ-03 | Phase 2 | Pending |
@@ -138,9 +138,10 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 **Summary:**
 - v1 requirements: 19 total
-- Mapped to phases: 19
-- Unmapped: 0
+- Phase 1 complete: 10
+- Phase 2 pending: 7
+- Phase 3 pending: 2
 
 ---
 
-*Last updated: 2026-04-24*
+*Last updated: 2026-04-25*

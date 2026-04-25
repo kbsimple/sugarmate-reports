@@ -77,16 +77,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Complete |
-| DATA-02 | Phase 1 | Complete |
-| DATA-03 | Phase 1 | Complete |
-| DATA-04 | Phase 1 | Complete |
-| DATA-05 | Phase 1 | Complete |
-| METR-01 | Phase 1 | Complete |
-| METR-02 | Phase 1 | Complete |
-| METR-03 | Phase 1 | Complete |
-| METR-04 | Phase 1 | Complete |
-| METR-05 | Phase 1 | Complete |
+| DATA-01 | Phase 1 | Complete (01-03) |
+| DATA-02 | Phase 1 | Complete (01-02, 01-03) |
+| DATA-03 | Phase 1 | Complete (01-03) |
+| DATA-04 | Phase 1 | Complete (01-03) |
+| DATA-05 | Phase 1 | Complete (01-03) |
+| METR-01 | Phase 1 | Complete (01-04) |
+| METR-02 | Phase 1 | Complete (01-04) |
+| METR-03 | Phase 1 | Complete (01-04) |
+| METR-04 | Phase 1 | Complete (01-04) |
+| METR-05 | Phase 1 | Complete (01-04) |
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 2 | Pending |
 | VIZ-03 | Phase 2 | Pending |
@@ -99,9 +99,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage:**
 - v1 requirements: 19 total
-- Mapped to phases: 19
-- Unmapped: 0
+- Phase 1 complete: 10
+- Phase 2 pending: 7
+- Phase 3 pending: 2
 
 ---
 *Requirements defined: 2026-04-24*
-*Last updated: 2026-04-24 after roadmap creation*
+*Last updated: 2026-04-25 after Phase 1 completion*
