@@ -52,10 +52,11 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Import and include routers after app is created to avoid circular imports
-from .routes import upload, results  # noqa: E402
+from .routes import upload, results, export  # noqa: E402
 
 app.include_router(upload.router, prefix="/api", tags=["upload"])
 app.include_router(results.router, prefix="/api", tags=["results"])
+app.include_router(export.router, tags=["export"])
 
 
 @app.get("/")
