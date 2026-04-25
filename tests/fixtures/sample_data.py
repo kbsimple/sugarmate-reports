@@ -95,7 +95,8 @@ def generate_sample_results(
         average_glucose=avg_glucose,
         glucose_std=30.0,
         cv_pct=round(30.0 / avg_glucose * 100, 1),
-        gmi=round(avg_glucose / 28.7 - 42, 1),
+        # GMI formula: (avg_glucose + 46.7) / 28.7
+        gmi=round((avg_glucose + 46.7) / 28.7, 1),
         completeness_pct=95.0,
         data_quality_flags=[],
         sensor_warmup_excluded=True,
