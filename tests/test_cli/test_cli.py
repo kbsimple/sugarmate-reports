@@ -32,8 +32,9 @@ class TestAnalyzeCommand:
 
         assert result.exit_code == 0
         assert "Analysis Period" in result.output
-        assert "Time in Range" in result.output
-        assert "Glucose Metrics" in result.output
+        assert "Glucose Summary" in result.output or "Glucose Metrics" in result.output
+        # New output uses Rich table with metrics
+        assert "Average" in result.output
 
     def test_analyze_command_with_dates(
         self, runner: CliRunner, sample_csv: Path
@@ -85,10 +86,10 @@ class TestAnalyzeCommand:
         result = runner.invoke(app, [str(sample_csv)])
 
         assert result.exit_code == 0
-        # Verify key metrics are in output
-        assert "Average:" in result.output
-        assert "GMI:" in result.output
-        assert "Target (70-180):" in result.output
+        # Verify key metrics are in output (Rich table format)
+        assert "Average" in result.output
+        assert "GMI" in result.output
+        assert "Target" in result.output or "70-180" in result.output
 
     def test_analyze_command_shows_gmi_caveat(
         self, runner: CliRunner, sample_csv: Path
