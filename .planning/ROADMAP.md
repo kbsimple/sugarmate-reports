@@ -15,7 +15,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 ## Phases
 
 - [x] **Phase 1: Core Analysis Library** - Foundation data pipeline with validated metrics, reusable as independent library
-- [ ] **Phase 2: CLI Tool + Insights** - Command-line interface validates core library, visualization and pattern detection
+- [x] **Phase 2: CLI Tool + Insights** - Command-line interface validates core library, visualization and pattern detection
 - [ ] **Phase 3: Web Interface + Reports** - Browser-based upload with interactive dashboard and AGP report export
 
 ---
@@ -62,7 +62,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 **Plans:**
 - [x] 02-01-PLAN.md — CLI Entry Point (Typer setup, analyze command, basic text output)
 - [x] 02-02-PLAN.md — Visualization Module (trend graph, daily table, period comparison)
-- [ ] 02-03-PLAN.md — Pattern Detection & Insights (time-of-day, day-of-week, wellness suggestions)
+- [x] 02-03-PLAN.md — Pattern Detection & Insights (time-of-day, day-of-week, wellness suggestions)
 
 ---
 
@@ -79,7 +79,11 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 3. User can export AGP (Ambulatory Glucose Profile) report for healthcare provider
 4. AGP report includes all standard elements: glucose profile, daily glucose, and data statistics
 
-**Plans:** TBD
+**Plans:**
+- [x] 03-01-PLAN.md — FastAPI Foundation & Upload (app structure, upload endpoint, base templates)
+- [x] 03-02-PLAN.md — Interactive Dashboard (results page, Chart.js visualizations, patterns display)
+- [x] 03-03-PLAN.md — AGP Report Export (PDF generation, standard AGP format, download endpoint)
+- [ ] 03-04-PLAN.md — Web Test Suite (upload tests, results tests, export tests, integration tests)
 
 **UI hint:** yes
 
@@ -90,8 +94,8 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Analysis Library | 4/4 | Complete | 01-01, 01-02, 01-03, 01-04 |
-| 2. CLI Tool + Insights | 2/3 | In Progress | 02-01, 02-02 |
-| 3. Web Interface + Reports | 0/3 | Not started | - |
+| 2. CLI Tool + Insights | 3/3 | Complete | 02-01, 02-02, 02-03 |
+| 3. Web Interface + Reports | 3/4 | In Progress | 03-01, 03-02, 03-03 |
 
 ---
 
@@ -100,7 +104,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 **Build Order (per constraint):**
 1. Core library with no web dependencies
 2. CLI tool that imports core library
-3. Web frontend as thin adapter over core library
+3. Web frontend as thin adapters over core library
 
 **Regulatory Compliance:**
 - All user-facing text reviewed for wellness positioning
@@ -132,20 +136,18 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 | VIZ-01 | Phase 2 | Complete (02-02) |
 | VIZ-02 | Phase 2 | Complete (02-01, 02-02) |
 | VIZ-03 | Phase 2 | Complete (02-02) |
-| INSG-01 | Phase 2 | Planned (02-03) |
-| INSG-02 | Phase 2 | Planned (02-03) |
-| INSG-03 | Phase 2 | Planned (02-03) |
-| INSG-04 | Phase 2 | Planned (02-03) |
-| RPT-01 | Phase 3 | Pending |
-| RPT-02 | Phase 3 | Pending |
+| INSG-01 | Phase 2 | Complete (02-03) |
+| INSG-02 | Phase 2 | Complete (02-03) |
+| INSG-03 | Phase 2 | Complete (02-03) |
+| INSG-04 | Phase 2 | Complete (02-03) |
+| RPT-01 | Phase 3 | Complete (03-01, 03-02) |
+| RPT-02 | Phase 3 | Complete (03-03) |
 
 **Summary:**
 - v1 requirements: 19 total
 - Phase 1 complete: 10
-- Phase 2 complete: 3 (VIZ-01, VIZ-02, VIZ-03)
-- Phase 2 in progress: 4 (INSG-01 to INSG-04)
-- Phase 3 pending: 2
+- Phase 2 complete: 7
+- Phase 3 complete: 2
 
 ---
-
 *Last updated: 2026-04-25*
