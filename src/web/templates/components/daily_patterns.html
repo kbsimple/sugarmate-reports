@@ -1,0 +1,35 @@
+{# Daily patterns bar chart component.
+
+Parameters:
+  - patterns: List of pattern objects with time_period, avg_glucose, severity
+#}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg mb-4">Time-of-Day Patterns</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+            Average glucose levels throughout the day, color-coded by glucose zone.
+        </p>
+        <div class="chart-container" style="position: relative; height: 300px;">
+            <canvas id="dailyPatternsChart"></canvas>
+        </div>
+        <div class="flex flex-wrap gap-4 mt-4 justify-center text-sm">
+            <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded bg-success"></span>
+                <span>Target (70-180)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded bg-yellow-400"></span>
+                <span>High (180-250)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded bg-orange-500"></span>
+                <span>Very High (&gt;250)</span>
+            </div>
+        </div>
+        {% if not patterns or patterns|length == 0 %}
+        <div class="text-center py-8 text-base-content/60">
+            <p>No time-of-day patterns detected in your data.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>

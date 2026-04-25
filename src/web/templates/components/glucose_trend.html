@@ -1,0 +1,32 @@
+{# Glucose trend line chart component.
+
+Parameters:
+  - glucose_readings: List of {timestamp, glucose} objects for chart data
+#}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg mb-4">Glucose Trend</h3>
+        <div class="chart-container" style="position: relative; height: 300px;">
+            <canvas id="glucoseTrendChart"></canvas>
+        </div>
+        <div class="flex flex-wrap gap-4 mt-4 justify-center text-sm">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-0.5 bg-error"></span>
+                <span>Low (&lt;70 mg/dL)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-0.5 bg-success opacity-30"></span>
+                <span>Target Range (70-180 mg/dL)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-0.5 bg-yellow-400"></span>
+                <span>High (&gt;180 mg/dL)</span>
+            </div>
+        </div>
+        {% if not glucose_readings or glucose_readings|length == 0 %}
+        <div class="text-center py-8 text-base-content/60">
+            <p>No glucose readings available for this period.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
