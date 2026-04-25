@@ -18,6 +18,15 @@ from cgm_insights.output.visualization import (
     render_comparison,
     render_zone_legend,
 )
+from cgm_insights.analytics.patterns import (
+    detect_time_of_day_patterns,
+    detect_day_of_week_patterns,
+)
+from cgm_insights.output.suggestions import (
+    generate_suggestions,
+    format_suggestions_rich,
+    WELLNESS_DISCLAIMER,
+)
 
 app = typer.Typer(
     name="cgm-insights",
@@ -63,6 +72,11 @@ def analyze(
         "-c",
         help="Compare with previous period of same duration",
     ),
+    insights: bool = typer.Option(
+        True,
+        "--insights/--no-insights",
+        help="Show time-of-day and day-of-week patterns with suggestions",
+    ),
 ) -> None:
     """Analyze CGM data from file and display metrics.
 
@@ -92,9 +106,9 @@ def analyze(
             exclude_warmup=exclude_warmup,
         )
 
-        # Get readings for visualization if needed
+        # Get readings for visualization or insights if needed
         readings = None
-        if visualize or compare:
+        if visualize or compare or insights:
             parser = get_parser(str(file_path))
             readings = parser.parse(str(file_path), start_date=start, end_date=end)
             if exclude_warmup and readings:
@@ -153,6 +167,27 @@ def analyze(
 
             except Exception as e:
                 console.print(f"\n[yellow]Could not compare periods: {e}[/yellow]")
+
+        # Display insights if requested
+        if insights and readings:
+            try:
+                # Detect patterns
+                time_patterns = detect_time_of_day_patterns(readings)
+                day_patterns = detect_day_of_week_patterns(readings)
+                all_patterns = time_patterns + day_patterns
+
+                if all_patterns:
+                    # Generate suggestions from patterns
+                    suggestions = generate_suggestions(all_patterns, results)
+                    format_suggestions_rich(suggestions, console)
+                else:
+                    console.print("\n[cyan]No significant patterns detected in your data.[/cyan]")
+                    console.print(f"\n[dim]{WELLNESS_DISCLAIMER}[/dim]")
+
+            except Exception as e:
+                console.print(f"\n[yellow]Could not generate insights: {e}[/yellow]")
+        elif insights and not readings:
+            console.print("\n[yellow]Insights require data. No readings available.[/yellow]")
 
         # Display GMI caveat
         console.print(f"\n[dim]Note: {GMI_CAVEAT}[/dim]")
