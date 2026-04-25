@@ -1,7 +1,7 @@
 # Requirements: CGM Insights
 
 **Defined:** 2026-04-24
-**Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve glucose control.
+**Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
 
 ## v1 Requirements
 
@@ -87,21 +87,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | METR-03 | Phase 1 | Pending |
 | METR-04 | Phase 1 | Pending |
 | METR-05 | Phase 1 | Pending |
-| VIZ-01 | Phase 1 | Pending |
-| VIZ-02 | Phase 1 | Pending |
-| VIZ-03 | Phase 1 | Pending |
-| INSG-01 | Phase 1 | Pending |
-| INSG-02 | Phase 1 | Pending |
-| INSG-03 | Phase 1 | Pending |
-| INSG-04 | Phase 1 | Pending |
-| RPT-01 | Phase 1 | Pending |
-| RPT-02 | Phase 1 | Pending |
+| VIZ-01 | Phase 2 | Pending |
+| VIZ-02 | Phase 2 | Pending |
+| VIZ-03 | Phase 2 | Pending |
+| INSG-01 | Phase 2 | Pending |
+| INSG-02 | Phase 2 | Pending |
+| INSG-03 | Phase 2 | Pending |
+| INSG-04 | Phase 2 | Pending |
+| RPT-01 | Phase 3 | Pending |
+| RPT-02 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 19 total
 - Mapped to phases: 19
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-24*
-*Last updated: 2026-04-24 after initial definition*
+*Last updated: 2026-04-24 after roadmap creation*
