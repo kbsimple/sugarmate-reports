@@ -59,7 +59,10 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 5. User sees time-of-day patterns surfaced with specific actionable suggestions
 6. All insights use wellness language ("consider," "pattern") not medical advice
 
-**Plans:** TBD
+**Plans:**
+- [x] 02-01-PLAN.md — CLI Entry Point (Typer setup, analyze command, basic text output)
+- [x] 02-02-PLAN.md — Visualization Module (trend graph, daily table, period comparison)
+- [ ] 02-03-PLAN.md — Pattern Detection & Insights (time-of-day, day-of-week, wellness suggestions)
 
 ---
 
@@ -87,7 +90,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Analysis Library | 4/4 | Complete | 01-01, 01-02, 01-03, 01-04 |
-| 2. CLI Tool + Insights | 0/3 | Not started | - |
+| 2. CLI Tool + Insights | 2/3 | In Progress | 02-01, 02-02 |
 | 3. Web Interface + Reports | 0/3 | Not started | - |
 
 ---
@@ -126,20 +129,21 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 | METR-03 | Phase 1 | Complete (01-04) |
 | METR-04 | Phase 1 | Complete (01-04) |
 | METR-05 | Phase 1 | Complete (01-04) |
-| VIZ-01 | Phase 2 | Pending |
-| VIZ-02 | Phase 2 | Pending |
-| VIZ-03 | Phase 2 | Pending |
-| INSG-01 | Phase 2 | Pending |
-| INSG-02 | Phase 2 | Pending |
-| INSG-03 | Phase 2 | Pending |
-| INSG-04 | Phase 2 | Pending |
+| VIZ-01 | Phase 2 | Complete (02-02) |
+| VIZ-02 | Phase 2 | Complete (02-01, 02-02) |
+| VIZ-03 | Phase 2 | Complete (02-02) |
+| INSG-01 | Phase 2 | Planned (02-03) |
+| INSG-02 | Phase 2 | Planned (02-03) |
+| INSG-03 | Phase 2 | Planned (02-03) |
+| INSG-04 | Phase 2 | Planned (02-03) |
 | RPT-01 | Phase 3 | Pending |
 | RPT-02 | Phase 3 | Pending |
 
 **Summary:**
 - v1 requirements: 19 total
 - Phase 1 complete: 10
-- Phase 2 pending: 7
+- Phase 2 complete: 3 (VIZ-01, VIZ-02, VIZ-03)
+- Phase 2 in progress: 4 (INSG-01 to INSG-04)
 - Phase 3 pending: 2
 
 ---
