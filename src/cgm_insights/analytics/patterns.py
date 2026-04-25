@@ -162,19 +162,22 @@ def detect_time_of_day_patterns(
         pattern_description = None
         severity = PatternSeverity.INFO
 
+        # Get period label or fallback
+        period_label = TIME_PERIOD_LABELS.get(period_key, f"{period_key[0]:02d}:00-{period_key[1]:02d}:00")
+
         # High glucose pattern (>20% above baseline)
         if percent_from_baseline > 20:
             severity = PatternSeverity.MODERATE if percent_from_baseline < 30 else PatternSeverity.SIGNIFICANT
-            pattern_description = f"Higher glucose in {TIME_PERIOD_LABELS.get(period_key, period_key[0] + '-' + period_key[1])} ({avg_glucose:.0f} mg/dL, {percent_from_baseline:.0f}% above average)"
+            pattern_description = f"Higher glucose in {period_label} ({avg_glucose:.0f} mg/dL, {percent_from_baseline:.0f}% above average)"
 
         # Low glucose pattern (>20% below baseline)
         elif percent_from_baseline < -20:
             severity = PatternSeverity.MODERATE if abs(percent_from_baseline) < 30 else PatternSeverity.SIGNIFICANT
-            pattern_description = f"Lower glucose in {TIME_PERIOD_LABELS.get(period_key, period_key[0] + '-' + period_key[1])} ({avg_glucose:.0f} mg/dL, {abs(percent_from_baseline):.0f}% below average)"
+            pattern_description = f"Lower glucose in {period_label} ({avg_glucose:.0f} mg/dL, {abs(percent_from_baseline):.0f}% below average)"
 
         # High variability pattern
         elif cv > VARIABILITY_CV_THRESHOLD:
-            pattern_description = f"High variability in {TIME_PERIOD_LABELS.get(period_key, period_key[0] + '-' + period_key[1])} (CV: {cv:.0f}%)"
+            pattern_description = f"High variability in {period_label} (CV: {cv:.0f}%)"
             severity = PatternSeverity.INFO
 
         if pattern_description:
