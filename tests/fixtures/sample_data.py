@@ -108,6 +108,8 @@ def create_sample_csv(
 ) -> Path:
     """Create a temporary CSV file with CGM data.
 
+    Uses Sugarmate CSV format: datetime, mg_dl columns.
+
     Args:
         readings: List of readings (generates 288 if None)
         include_header: Whether to include CSV header row
@@ -123,10 +125,12 @@ def create_sample_csv(
 
     with open(path, "w") as f:
         if include_header:
-            f.write("timestamp,glucose\n")
+            f.write("datetime,mg_dl\n")
 
         for reading in readings:
-            f.write(f"{reading.timestamp.isoformat()},{reading.glucose_mg_dl}\n")
+            # Use Sugarmate datetime format: YYYY-MM-DD HH:MM
+            dt_str = reading.timestamp.strftime("%Y-%m-%d %H:%M")
+            f.write(f"{dt_str},{reading.glucose_mg_dl}\n")
 
     return Path(path)
 
@@ -136,6 +140,8 @@ def create_sample_csv_content(
     include_header: bool = True,
 ) -> str:
     """Create CSV content string for upload testing.
+
+    Uses Sugarmate CSV format: datetime, mg_dl columns.
 
     Args:
         readings: List of readings (generates 288 if None)
@@ -149,10 +155,12 @@ def create_sample_csv_content(
 
     lines = []
     if include_header:
-        lines.append("timestamp,glucose")
+        lines.append("datetime,mg_dl")
 
     for reading in readings:
-        lines.append(f"{reading.timestamp.isoformat()},{reading.glucose_mg_dl}")
+        # Use Sugarmate datetime format: YYYY-MM-DD HH:MM
+        dt_str = reading.timestamp.strftime("%Y-%m-%d %H:%M")
+        lines.append(f"{dt_str},{reading.glucose_mg_dl}")
 
     return "\n".join(lines)
 
@@ -181,6 +189,8 @@ def get_sample_session_id() -> str:
 def create_large_csv_content(size_mb: float = 11.0) -> bytes:
     """Create CSV content larger than the upload limit.
 
+    Uses Sugarmate CSV format: datetime, mg_dl columns.
+
     Args:
         size_mb: Target size in megabytes
 
@@ -188,8 +198,8 @@ def create_large_csv_content(size_mb: float = 11.0) -> bytes:
         CSV content as bytes
     """
     # Create minimal rows until we exceed size
-    header = b"timestamp,glucose\n"
-    row_template = b"2026-04-25T12:00:00,140\n"
+    header = b"datetime,mg_dl\n"
+    row_template = b"2026-04-25 12:00,140\n"
 
     target_size = int(size_mb * 1024 * 1024)
     content = header
@@ -205,4 +215,4 @@ EMPTY_CSV_CONTENT = b""
 
 INVALID_CSV_CONTENT = b"not,a,valid,cgm,file\n1,2,3,4\n"
 
-INSUFFICIENT_CSV_CONTENT = b"timestamp,glucose\n2026-04-25T12:00:00,140\n"
+INSUFFICIENT_CSV_CONTENT = b"datetime,mg_dl\n2026-04-25 12:00,140\n"
