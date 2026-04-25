@@ -36,7 +36,11 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 4. User sees Time-in-Range percentage across all 5 glucose bands (very low, low, target, high, very high)
 5. User sees average glucose with standard deviation and GMI, with accuracy caveat displayed
 
-**Plans:** TBD
+**Plans:**
+- [x] 01-01-PLAN.md — Environment setup (Python 3.10+, pyproject.toml, package structure)
+- [x] 01-02-PLAN.md — Data models (CGMReading, ValidationResult, AnalysisResults)
+- [x] 01-03-PLAN.md — Data ingestion (Parser, Sugarmate CSV, Validator, Normalizer)
+- [x] 01-04-PLAN.md — Analytics & Output (GlucoStats metrics, formatter, public API)
 
 ---
 
@@ -82,7 +86,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Analysis Library | 0/3 | Not started | - |
+| 1. Core Analysis Library | 4/4 | Planned | - |
 | 2. CLI Tool + Insights | 0/3 | Not started | - |
 | 3. Web Interface + Reports | 0/3 | Not started | - |
 
@@ -112,16 +116,16 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
-| DATA-05 | Phase 1 | Pending |
-| METR-01 | Phase 1 | Pending |
-| METR-02 | Phase 1 | Pending |
-| METR-03 | Phase 1 | Pending |
-| METR-04 | Phase 1 | Pending |
-| METR-05 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Planned (01-03) |
+| DATA-02 | Phase 1 | Planned (01-02, 01-03) |
+| DATA-03 | Phase 1 | Planned (01-03) |
+| DATA-04 | Phase 1 | Planned (01-03) |
+| DATA-05 | Phase 1 | Planned (01-03) |
+| METR-01 | Phase 1 | Planned (01-04) |
+| METR-02 | Phase 1 | Planned (01-04) |
+| METR-03 | Phase 1 | Planned (01-04) |
+| METR-04 | Phase 1 | Planned (01-04) |
+| METR-05 | Phase 1 | Planned (01-04) |
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 2 | Pending |
 | VIZ-03 | Phase 2 | Pending |
@@ -139,4 +143,4 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 ---
 
-*Last updated: 2026-04-23*
+*Last updated: 2026-04-24*
