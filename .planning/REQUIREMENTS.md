@@ -10,18 +10,18 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Data Import
 
 - [ ] **DATA-01**: User can upload Sugarmate Excel export files
-- [ ] **DATA-02**: System parses glucose readings, timestamps, and trends from uploaded file
-- [ ] **DATA-03**: System validates data completeness and flags gaps/missing readings
+- [x] **DATA-02**: System parses glucose readings, timestamps, and trends from uploaded file
+- [x] **DATA-03**: System validates data completeness and flags gaps/missing readings
 - [ ] **DATA-04**: System detects and handles sensor warm-up periods (first 2 hours typically inaccurate)
 - [ ] **DATA-05**: User can select date range for analysis (7, 14, 30, 90 days + custom)
 
 ### Core Metrics
 
-- [ ] **METR-01**: System calculates Time-in-Range (TIR) across all 5 glucose bands
-- [ ] **METR-02**: System calculates average glucose with standard deviation
-- [ ] **METR-03**: System calculates Glucose Management Indicator (GMI) with accuracy caveats
-- [ ] **METR-04**: System calculates Coefficient of Variation (%CV) for variability
-- [ ] **METR-05**: System calculates Time Below Range (TBR) and Time Very Low (severe hypoglycemia risk)
+- [x] **METR-01**: System calculates Time-in-Range (TIR) across all 5 glucose bands
+- [x] **METR-02**: System calculates average glucose with standard deviation
+- [x] **METR-03**: System calculates Glucose Management Indicator (GMI) with accuracy caveats
+- [x] **METR-04**: System calculates Coefficient of Variation (%CV) for variability
+- [x] **METR-05**: System calculates Time Below Range (TBR) and Time Very Low (severe hypoglycemia risk)
 
 ### Visualization
 
@@ -78,15 +78,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
 | DATA-04 | Phase 1 | Pending |
 | DATA-05 | Phase 1 | Pending |
-| METR-01 | Phase 1 | Pending |
-| METR-02 | Phase 1 | Pending |
-| METR-03 | Phase 1 | Pending |
-| METR-04 | Phase 1 | Pending |
-| METR-05 | Phase 1 | Pending |
+| METR-01 | Phase 1 | Complete |
+| METR-02 | Phase 1 | Complete |
+| METR-03 | Phase 1 | Complete |
+| METR-04 | Phase 1 | Complete |
+| METR-05 | Phase 1 | Complete |
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 2 | Pending |
 | VIZ-03 | Phase 2 | Pending |
