@@ -1,14 +1,14 @@
 """Terminal-based visualization for CGM glucose data.
 
 This module provides visualization functions for displaying glucose trends,
-daily summaries, and period comparisons in the terminal using Rich and asciichart.
+daily summaries, and period comparisons in the terminal using Rich and asciichartpy.
 """
 
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-import asciichart
+import asciichartpy
 
 from cgm_insights.models import CGMReading, AnalysisResults
 from cgm_insights.analytics.metrics import GLUCOSE_THRESHOLDS
@@ -109,16 +109,16 @@ def render_trend_graph(readings: list[CGMReading], console: Console | None = Non
     min_glucose = min(glucose_values)
     max_glucose = max(glucose_values)
 
-    # Create asciichart configuration
+    # Create asciichartpy configuration
     # Set height and add colors for different ranges
     config = {
         'height': 15,
-        'colors': [asciichart.green],  # Base color
+        'colors': [asciichartpy.green],  # Base color
     }
 
     # Display the ASCII chart
     try:
-        chart_output = asciichart.plot([glucose_values], config)
+        chart_output = asciichartpy.plot([glucose_values], config)
         console.print(chart_output)
     except Exception as e:
         console.print(f"[yellow]Could not render trend graph: {e}[/yellow]")
