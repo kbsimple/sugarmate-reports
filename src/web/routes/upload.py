@@ -14,6 +14,8 @@ from typing import Optional
 
 from ..services.session import session_store, create_session
 from cgm_insights import analyze_file
+from cgm_insights.ingestion import get_parser, exclude_warmup_period
+from cgm_insights.analytics import detect_time_of_day_patterns, detect_day_of_week_patterns
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/web/templates")
@@ -103,6 +105,17 @@ async def upload_file(
             tmp_path = tmp.name
 
         try:
+            # Parse file to get readings for pattern detection
+            parser = get_parser(tmp_path)
+            from datetime import datetime
+            start = datetime.fromisoformat(start_date) if start_date else None
+            end = datetime.fromisoformat(end_date) if end_date else None
+            readings = parser.parse(tmp_path, start_date=start, end_date=end)
+
+            # Exclude warmup if requested
+            if exclude_warmup:
+                readings = exclude_warmup_period(readings)
+
             # Analyze file using core library
             results = analyze_file(
                 tmp_path,
@@ -111,9 +124,28 @@ async def upload_file(
                 exclude_warmup=exclude_warmup,
             )
 
-            # Create session and store results
+            # Detect patterns
+            time_patterns = detect_time_of_day_patterns(readings)
+            day_patterns = detect_day_of_week_patterns(readings)
+            all_patterns = time_patterns + day_patterns
+
+            # Convert readings to chart format (limit for web display)
+            raw_readings = [
+                {
+                    "timestamp": r.timestamp.isoformat(),
+                    "glucose": r.glucose_mg_dl
+                }
+                for r in readings[:2000]  # Limit to 2000 points for web
+            ]
+
+            # Create session and store results with patterns
             session_id = create_session()
-            session_store.store(session_id, results)
+            session_store.store(
+                session_id,
+                results,
+                patterns=all_patterns,
+                raw_readings=raw_readings
+            )
 
             return JSONResponse({
                 "session_id": session_id,
