@@ -1,0 +1,65 @@
+{# Patterns and suggestions list component.
+
+Parameters:
+  - patterns: List of detected patterns with type, description, severity, etc.
+  - suggestions: List of wellness suggestions with category, title, action, etc.
+#}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg mb-4">Detected Patterns</h3>
+
+        {% if patterns and patterns|length > 0 %}
+        <div class="space-y-3 mb-6">
+            {% for pattern in patterns %}
+            <div class="alert {% if pattern.severity == 'significant' %}alert-error{% elif pattern.severity == 'moderate' %}alert-warning{% else %}alert-info{% endif %}">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        {% if pattern.type == 'time_of_day' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {% endif %}
+                        <span class="font-medium">{{ pattern.time_period }}</span>
+                    </div>
+                    <p class="text-sm mt-1">{{ pattern.description }}</p>
+                    <p class="text-xs opacity-70 mt-1">Average: {{ pattern.avg_glucose }} mg/dL | {{ pattern.reading_count }} readings</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-base-content/60 mb-6">No significant patterns detected in your data.</p>
+        {% endif %}
+
+        {% if suggestions and suggestions|length > 0 %}
+        <h4 class="font-semibold text-md mb-3">Suggestions</h4>
+        <div class="space-y-3">
+            {% for suggestion in suggestions %}
+            <div class="bg-base-200 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                    <div class="badge {% if suggestion.category == 'safety' %}badge-error{% elif suggestion.category == 'control' %}badge-warning{% elif suggestion.category == 'timing' %}badge-info{% else %}badge-secondary{% endif %}">
+                        {{ suggestion.category }}
+                    </div>
+                    <div class="flex-1">
+                        <h5 class="font-medium">{{ suggestion.title }}</h5>
+                        <p class="text-sm text-base-content/70 mt-1">{{ suggestion.description }}</p>
+                        <p class="text-sm mt-2"><strong>Consider:</strong> {{ suggestion.action }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-base-200 rounded-lg p-3 mt-4">
+            <p class="text-xs text-base-content/60">
+                <strong>Wellness Information Only:</strong> These patterns and suggestions are for informational purposes
+                and are not medical advice. Always discuss glucose management with your healthcare provider.
+            </p>
+        </div>
+    </div>
+</div>

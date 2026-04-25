@@ -1,0 +1,29 @@
+{# Metrics card component for displaying individual metrics.
+
+Parameters:
+  - title: Metric name
+  - value: Metric value
+  - unit: Unit of measurement (optional)
+  - target_range: Target range string (optional)
+  - status: 'good', 'warning', or 'bad' for color coding
+  - description: Additional context (optional)
+#}
+<div class="card bg-base-100 shadow-md metric-card">
+    <div class="card-body p-4">
+        <h3 class="card-title text-sm font-medium text-base-content/70">{{ title }}</h3>
+        <div class="flex items-baseline gap-1">
+            <span class="text-3xl font-bold {{ 'text-success' if status == 'good' else ('text-warning' if status == 'warning' else 'text-error' if status == 'bad' else '') }}">
+                {{ value }}
+            </span>
+            {% if unit %}
+            <span class="text-sm text-base-content/50">{{ unit }}</span>
+            {% endif %}
+        </div>
+        {% if target_range %}
+        <p class="text-xs text-base-content/50">Target: {{ target_range }}</p>
+        {% endif %}
+        {% if description %}
+        <p class="text-xs text-base-content/60 mt-1">{{ description }}</p>
+        {% endif %}
+    </div>
+</div>
