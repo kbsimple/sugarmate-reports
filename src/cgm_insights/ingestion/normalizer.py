@@ -2,7 +2,6 @@
 
 from datetime import datetime
 
-import pandas as pd
 import polars as pl
 
 from ..models import CGMReading
@@ -41,10 +40,12 @@ def normalize_for_glucostats(
     return df
 
 
-def to_glucostats_dataframe(df: pl.DataFrame) -> pd.DataFrame:
+def to_glucostats_dataframe(df: pl.DataFrame) -> "pd.DataFrame":
     """Convert Polars DataFrame to pandas for GlucoStats.
 
     GlucoStats requires pandas DataFrame with specific column names.
+    pandas is imported lazily so it is only required when this function
+    is actually called (optional dependency).
 
     Args:
         df: Polars DataFrame with 'time' and 'glucose' columns
@@ -52,6 +53,8 @@ def to_glucostats_dataframe(df: pl.DataFrame) -> pd.DataFrame:
     Returns:
         pandas DataFrame compatible with GlucoStats
     """
+    import pandas as pd  # Lazy import: only required if GlucoStats is used
+
     pandas_df = df.to_pandas()
 
     # Ensure time column is datetime
