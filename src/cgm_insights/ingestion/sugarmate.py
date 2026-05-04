@@ -79,32 +79,40 @@ class SugarmateParser(Parser):
                 f"Date filter failed (check timezone consistency): {e}"
             ) from e
 
+        # Filter out-of-range glucose values in Polars (vectorized, avoids Python loop overhead)
+        original_count = len(df)
+        df = df.filter(pl.col("mg_dl").cast(pl.Float64).is_between(40, 400))
+        skipped_count = original_count - len(df)
+
+        # Normalize trend arrows in Polars (vectorized)
+        valid_trends = ["↑↑", "↑", "↗", "→", "↘", "↓", "↓↓"]
+        if "trend" in df.columns:
+            df = df.with_columns(
+                pl.when(pl.col("trend").is_in(valid_trends))
+                .then(pl.col("trend"))
+                .otherwise(None)
+                .alias("trend")
+            )
+
         # Sort by timestamp
         df = df.sort("timestamp")
 
-        # Convert to list of CGMReading objects
-        # Filter out values outside physiologically plausible range (40-400 mg/dL)
-        readings = []
-        skipped_count = 0
-        for row in df.iter_rows(named=True):
-            glucose_value = float(row["mg_dl"])
-
-            # Skip readings outside valid range
-            if glucose_value < 40 or glucose_value > 400:
-                skipped_count += 1
-                continue
-
-            trend = row.get("trend", None)
-            # Normalize trend to one of the valid values or None
-            if trend and trend not in ["↑↑", "↑", "↗", "→", "↘", "↓", "↓↓"]:
-                trend = None
-
-            reading = CGMReading(
+        # Build CGMReading objects — object construction requires Python loop
+        readings = [
+            CGMReading(
                 timestamp=row["timestamp"],
-                glucose_mg_dl=glucose_value,
-                trend=trend,
+                glucose_mg_dl=float(row["mg_dl"]),
+                trend=row.get("trend") if "trend" in df.columns else None,
                 source="sugarmate",
             )
-            readings.append(reading)
+            for row in df.iter_rows(named=True)
+        ]
+
+        if skipped_count:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Skipped %d reading(s) outside physiological range (40–400 mg/dL)",
+                skipped_count,
+            )
 
         return readings
