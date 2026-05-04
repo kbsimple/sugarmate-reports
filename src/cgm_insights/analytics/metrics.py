@@ -1,20 +1,21 @@
 """CGM metrics calculation using GlucoStats."""
 
-from datetime import datetime
+import math
 from typing import Any
 
 from cgm_insights.models import CGMReading, AnalysisResults, TimeInRange, ValidationResult
 
 
-# Glucose thresholds (mg/dL)
-# These follow clinical standards for glucose ranges
+# Glucose thresholds (mg/dL) — ADA 2019 consensus boundaries
+# Each band uses inclusive lower bound and exclusive upper bound, except:
+#   target: [70, 180] inclusive on both ends
+#   high:   (180, 250] exclusive lower, inclusive upper
 GLUCOSE_THRESHOLDS = {
-    "very_low": 54,    # <54 mg/dL: severe hypoglycemia risk
-    "low": 70,         # 54-70 mg/dL: hypoglycemia
-    "target_low": 70,  # Target range starts
-    "target_high": 180,  # Target range ends
-    "high": 180,       # 180-250 mg/dL: hyperglycemia
-    "very_high": 250,  # >250 mg/dL: severe hyperglycemia
+    "very_low_max": 54,   # < 54 mg/dL: very low
+    "low_max": 70,        # [54, 70): low
+    "target_max": 180,    # [70, 180]: target (180 inclusive)
+    "high_max": 250,      # (180, 250]: high (180 exclusive)
+    # > 250 mg/dL: very high
 }
 
 
@@ -127,8 +128,6 @@ def _calculate_metrics_from_values(glucose_values: list[float]) -> dict:
     Returns:
         Dictionary with calculated metrics
     """
-    import math
-
     n = len(glucose_values)
     if n == 0:
         return {}
@@ -136,19 +135,22 @@ def _calculate_metrics_from_values(glucose_values: list[float]) -> dict:
     # Basic statistics
     mean = sum(glucose_values) / n
 
-    # Standard deviation
-    variance = sum((x - mean) ** 2 for x in glucose_values) / n
-    std = math.sqrt(variance)
+    # Sample standard deviation (Bessel's correction: divide by n-1)
+    if n < 2:
+        std = 0.0
+    else:
+        variance = sum((x - mean) ** 2 for x in glucose_values) / (n - 1)
+        std = math.sqrt(variance)
 
     # Coefficient of variation (%)
     cv = (std / mean) * 100 if mean > 0 else 0
 
-    # Time in ranges (percentages)
-    # Very low: <54 mg/dL
-    # Low: 54-70 mg/dL
-    # Target: 70-180 mg/dL
-    # High: 180-250 mg/dL
-    # Very high: >250 mg/dL
+    # Time in ranges (percentages) — ADA 2019 consensus boundaries
+    # very_low:  [40,  54)  — x < 54
+    # low:       [54,  70)  — 54 <= x < 70
+    # target:    [70, 180]  — 70 <= x <= 180  (180 is target, NOT high)
+    # high:      (180, 250] — 180 < x <= 250  (strictly above 180)
+    # very_high: (250, 400] — x > 250
     very_low = sum(1 for x in glucose_values if x < 54) / n * 100
     low = sum(1 for x in glucose_values if 54 <= x < 70) / n * 100
     target = sum(1 for x in glucose_values if 70 <= x <= 180) / n * 100
