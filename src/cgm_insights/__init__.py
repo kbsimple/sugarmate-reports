@@ -101,17 +101,21 @@ def analyze_file(
         >>> print(f"Time in Range: {results.time_in_range.target_pct:.1f}%")
     """
     from datetime import datetime
+    from pathlib import Path
 
     from .ingestion import get_parser, validate_completeness, exclude_warmup_period
     from .analytics import calculate_metrics
+
+    # Resolve path to prevent path traversal attacks
+    resolved_path = str(Path(file_path).resolve())
 
     # Parse dates if provided
     start = datetime.fromisoformat(start_date) if start_date else None
     end = datetime.fromisoformat(end_date) if end_date else None
 
     # Get appropriate parser and parse file
-    parser = get_parser(file_path)
-    readings = parser.parse(file_path, start_date=start, end_date=end)
+    parser = get_parser(resolved_path)
+    readings = parser.parse(resolved_path, start_date=start, end_date=end)
 
     if not readings:
         raise ValueError(f"No readings found in {file_path}")
@@ -122,9 +126,13 @@ def analyze_file(
     # Optionally exclude sensor warmup period
     if exclude_warmup:
         readings = exclude_warmup_period(readings)
-        validation.sensor_warmup_minutes = 120
-        if "sensor_warmup" not in validation.quality_flags:
-            validation.quality_flags.append("sensor_warmup")
+        if not readings:
+            raise ValueError(
+                "No readings remain after excluding the 2-hour sensor warmup period. "
+                "The dataset may be shorter than 2 hours, or use exclude_warmup=False."
+            )
+        # Re-validate on trimmed readings to get accurate completeness/gaps
+        validation = validate_completeness(readings)
 
     # Calculate metrics
     results = calculate_metrics(readings, validation)
