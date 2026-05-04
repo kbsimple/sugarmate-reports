@@ -8,6 +8,10 @@ All commits must use:
 - **Author name:** Faiser
 - **Email:** keepbreakfastsimple@gmail.com
 
+### Python Code Style
+
+Follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+
 ## Project Context
 
 **Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
