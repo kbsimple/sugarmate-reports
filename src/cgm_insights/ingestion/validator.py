@@ -97,25 +97,19 @@ def detect_sensor_warmup(
 ) -> int:
     """Detect sensor warmup period from data start.
 
-    The first 2 hours after sensor insertion are typically less accurate.
-    This function returns the number of warmup minutes detected.
+    Returns 0 — actual warmup detection requires sensor-change event data
+    that is not present in standard CSV exports. Warmup exclusion is
+    handled explicitly by :func:`exclude_warmup_period` when the caller
+    opts in via ``exclude_warmup=True``.
 
     Args:
         readings: Sorted list of CGM readings (chronological order)
-        warmup_hours: Number of hours to consider as warmup (default 2)
+        warmup_hours: Unused; retained for API compatibility
 
     Returns:
-        Number of warmup minutes (warmup_hours * 60) if data starts from
-        sensor insertion, 0 otherwise
+        Always 0; warmup period is controlled by exclude_warmup_period()
     """
-    if not readings:
-        return 0
-
-    # Check if data starts from sensor insertion
-    # If the first reading is within the first few hours of data,
-    # assume it's from sensor start
-    # For now, we always return warmup period from data start
-    return warmup_hours * 60
+    return 0
 
 
 def filter_by_date_range(
