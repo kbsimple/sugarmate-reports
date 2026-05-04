@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from cgm_insights.ingestion import Parser, SugarmateParser, get_parser, PARSERS
 
+SAMPLE_CSV = Path(__file__).parent.parent.parent / "data" / "readings.csv"
+
 
 def test_parser_interface_exists():
     """Test Parser abstract base class has required methods."""
@@ -13,10 +15,12 @@ def test_parser_interface_exists():
 
 
 def test_sugarmate_can_parse_csv():
-    """Test SugarmateParser identifies CSV files."""
-    assert SugarmateParser.can_parse("data.csv")
-    assert SugarmateParser.can_parse("readings.csv")
+    """Test SugarmateParser identifies CSV files by header content."""
+    if not SAMPLE_CSV.exists():
+        pytest.skip("Sample data file not found")
+    assert SugarmateParser.can_parse(str(SAMPLE_CSV))
     assert not SugarmateParser.can_parse("data.xlsx")
+    assert not SugarmateParser.can_parse("/nonexistent/file.csv")
 
 
 def test_sugarmate_parse_sample_data():
@@ -65,6 +69,8 @@ def test_sugarmate_parse_date_filter():
 
 
 def test_get_parser_returns_sugarmate_for_csv():
-    """Test get_parser returns SugarmateParser for CSV files."""
-    parser = get_parser("test.csv")
+    """Test get_parser returns SugarmateParser for a valid Sugarmate CSV."""
+    if not SAMPLE_CSV.exists():
+        pytest.skip("Sample data file not found")
+    parser = get_parser(str(SAMPLE_CSV))
     assert isinstance(parser, SugarmateParser)

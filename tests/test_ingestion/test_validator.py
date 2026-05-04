@@ -82,7 +82,7 @@ def test_validate_completeness_low_completeness():
 
 
 def test_detect_sensor_warmup():
-    """Test sensor warmup detection."""
+    """Test sensor warmup returns 0 — real warmup exclusion is handled by exclude_warmup_period."""
     start = datetime(2026, 4, 23, 0, 0)
     readings = [
         CGMReading(
@@ -95,8 +95,7 @@ def test_detect_sensor_warmup():
 
     warmup_minutes = detect_sensor_warmup(readings)
 
-    # Default is 2 hours = 120 minutes
-    assert warmup_minutes == 120
+    assert warmup_minutes == 0
 
 
 def test_filter_by_date_range():

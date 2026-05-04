@@ -119,11 +119,11 @@ def test_calculate_metrics_empty_readings_raises():
 
 
 def test_glucose_thresholds_defined():
-    """Test that glucose thresholds are properly defined."""
-    assert GLUCOSE_THRESHOLDS["very_low"] == 54
-    assert GLUCOSE_THRESHOLDS["low"] == 70
-    assert GLUCOSE_THRESHOLDS["target_high"] == 180
-    assert GLUCOSE_THRESHOLDS["very_high"] == 250
+    """Test that glucose thresholds are properly defined with ADA 2019 boundaries."""
+    assert GLUCOSE_THRESHOLDS["very_low_max"] == 54
+    assert GLUCOSE_THRESHOLDS["low_max"] == 70
+    assert GLUCOSE_THRESHOLDS["target_max"] == 180
+    assert GLUCOSE_THRESHOLDS["high_max"] == 250
 
 
 def test_calculate_metrics_with_validation_flags():

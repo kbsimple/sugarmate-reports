@@ -10,6 +10,19 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
+_XLSX_MAGIC = b"PK\x03\x04"
+
+
+def _detect_suffix(downloaded: Path, url_path: str) -> str:
+    """Return the real file extension based on magic bytes, falling back to URL path."""
+    try:
+        with downloaded.open("rb") as f:
+            if f.read(4) == _XLSX_MAGIC:
+                return ".xlsx"
+    except OSError:
+        pass
+    return Path(url_path).suffix or ".csv"
+
 import typer
 from rich.console import Console
 
@@ -203,14 +216,17 @@ def download_and_analyze(
             console.print("[red]Error: URL must start with http:// or https://[/red]")
             raise typer.Exit(1)
 
-        suffix = Path(parsed.path).suffix or ".csv"
         console.print(f"[cyan]Downloading {url}...[/cyan]")
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-            tmp_path = Path(tmp.name)
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            raw_path = Path(tmp.name)
 
+        tmp_path = raw_path
         try:
-            urllib.request.urlretrieve(url, tmp_path)
+            urllib.request.urlretrieve(url, raw_path)
+            suffix = _detect_suffix(raw_path, parsed.path)
+            tmp_path = raw_path.with_name(raw_path.name + suffix)
+            raw_path.rename(tmp_path)
             console.print("[green]Download complete.[/green]\n")
             _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, console)
         finally:

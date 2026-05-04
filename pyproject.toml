@@ -5,6 +5,7 @@ description = "CGM data analysis library for glucose insights"
 requires-python = ">=3.10"
 dependencies = [
     "polars>=1.40.0",
+    "fastexcel>=0.7.0",
     "glucostats>=1.0.0",
     "pydantic>=2.13.0",
     "openpyxl>=3.1.0",

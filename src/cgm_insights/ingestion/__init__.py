@@ -2,6 +2,7 @@
 
 from .parser import Parser, PARSERS, register_parser, get_parser
 from .sugarmate import SugarmateParser
+from .sugarmate_xlsx import SugarmateXlsxParser
 from .validator import (
     validate_completeness,
     detect_sensor_warmup,
@@ -21,6 +22,7 @@ __all__ = [
     "register_parser",
     "get_parser",
     "SugarmateParser",
+    "SugarmateXlsxParser",
     # Validator
     "validate_completeness",
     "detect_sensor_warmup",

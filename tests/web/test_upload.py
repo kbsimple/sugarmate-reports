@@ -116,11 +116,14 @@ class TestUploadEndpoint:
         assert "File too large" in response.json()["detail"]
 
     def test_upload_with_date_range(self, test_client: TestClient, sample_csv_bytes: bytes):
-        """Test upload with date range parameters."""
+        """Test upload with date range parameters covering the dynamically-generated sample data."""
+        from datetime import datetime, timedelta
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
         files = {"file": ("test.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
         data = {
-            "start_date": "2026-04-01",
-            "end_date": "2026-04-30",
+            "start_date": yesterday,
+            "end_date": tomorrow,
             "exclude_warmup": "true",
         }
 
