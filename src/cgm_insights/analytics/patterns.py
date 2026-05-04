@@ -150,9 +150,13 @@ def detect_time_of_day_patterns(
 
         avg_glucose = sum(period_glucose) / len(period_glucose)
 
-        # Calculate variability (CV)
-        variance = sum((g - avg_glucose) ** 2 for g in period_glucose) / len(period_glucose)
-        std = variance ** 0.5
+        # Calculate variability (CV) using sample std dev (Bessel's correction)
+        n_period = len(period_glucose)
+        if n_period < 2:
+            std = 0.0
+        else:
+            variance = sum((g - avg_glucose) ** 2 for g in period_glucose) / (n_period - 1)
+            std = variance ** 0.5
         cv = (std / avg_glucose * 100) if avg_glucose > 0 else 0
 
         # Determine pattern type based on comparison to baseline
@@ -327,7 +331,20 @@ def detect_day_of_week_patterns(
             ))
 
     # Check for specific day patterns
-    overall_avg = sum(m["avg"] * m["count"] for m in day_metrics.values()) / sum(m["count"] for m in day_metrics.values()) if day_metrics else 0
+    # Compute overall_avg using only days with enough readings to be eligible
+    # for pattern reporting, so sparse days don't skew the baseline.
+    eligible_metrics = {
+        day: m for day, m in day_metrics.items()
+        if m["count"] >= MIN_READINGS_FOR_PATTERN
+    }
+    if not eligible_metrics:
+        return patterns
+
+    eligible_total = sum(m["count"] for m in eligible_metrics.values())
+    overall_avg = (
+        sum(m["avg"] * m["count"] for m in eligible_metrics.values()) / eligible_total
+        if eligible_total > 0 else 0
+    )
 
     for day_name, metrics in day_metrics.items():
         if metrics["count"] < MIN_READINGS_FOR_PATTERN:
@@ -429,8 +446,12 @@ def _calculate_day_metrics(readings: list[CGMReading]) -> dict:
         return {"avg": 0, "std": 0, "cv": 0, "tir": 0, "count": 0}
 
     avg = sum(values) / len(values)
-    variance = sum((v - avg) ** 2 for v in values) / len(values)
-    std = variance ** 0.5
+    n_vals = len(values)
+    if n_vals < 2:
+        std = 0.0
+    else:
+        variance = sum((v - avg) ** 2 for v in values) / (n_vals - 1)
+        std = variance ** 0.5
     cv = (std / avg * 100) if avg > 0 else 0
     in_range = sum(1 for v in values if 70 <= v <= 180) / len(values) * 100
 
