@@ -23,8 +23,18 @@ class SugarmateParser(Parser):
 
     @classmethod
     def can_parse(cls, file_path: str) -> bool:
-        """Return True for CSV files."""
-        return Path(file_path).suffix.lower() == ".csv"
+        """Return True only for Sugarmate CSV files (detected by header columns).
+
+        Reads only the header row to confirm presence of the required
+        'datetime' and 'mg_dl' columns that Sugarmate exports produce.
+        """
+        if Path(file_path).suffix.lower() != ".csv":
+            return False
+        try:
+            header_df = pl.read_csv(file_path, n_rows=0)
+            return "datetime" in header_df.columns and "mg_dl" in header_df.columns
+        except Exception:
+            return False
 
     def parse(
         self,
@@ -59,10 +69,15 @@ class SugarmateParser(Parser):
         )
 
         # Filter by date range if provided
-        if start_date:
-            df = df.filter(pl.col("timestamp") >= start_date)
-        if end_date:
-            df = df.filter(pl.col("timestamp") <= end_date)
+        try:
+            if start_date:
+                df = df.filter(pl.col("timestamp") >= start_date)
+            if end_date:
+                df = df.filter(pl.col("timestamp") <= end_date)
+        except Exception as e:
+            raise ValueError(
+                f"Date filter failed (check timezone consistency): {e}"
+            ) from e
 
         # Sort by timestamp
         df = df.sort("timestamp")
