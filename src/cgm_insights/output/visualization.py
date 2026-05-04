@@ -180,12 +180,12 @@ def render_daily_table(results: AnalysisResults, console: Console | None = None)
         "<36%",
     )
 
-    # GMI
+    # GMI (A1C estimate) — label includes unit context to avoid ambiguity
     gmi_good = results.gmi < 7.0
     table.add_row(
-        "GMI",
+        "GMI (A1C estimate)",
         color_value(results.gmi, gmi_good, "%"),
-        "<7%",
+        "<7% (A1C est.)",
     )
 
     # Time in Target Range

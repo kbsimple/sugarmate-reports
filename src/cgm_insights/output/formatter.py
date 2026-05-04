@@ -120,7 +120,7 @@ def format_summary(results: AnalysisResults) -> str:
         f"  Average: {results.average_glucose:.0f} mg/dL",
         f"  Std Dev: {results.glucose_std:.0f} mg/dL",
         f"  CV: {results.cv_pct:.1f}%",
-        f"  GMI: {results.gmi:.1f}%",
+        f"  GMI (A1C estimate): {results.gmi:.1f}%",
         "",
         "Time in Range:",
         f"  Very Low (<54): {results.time_in_range.very_low_pct:.1f}%",
