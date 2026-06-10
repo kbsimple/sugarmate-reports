@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: complete
-last_updated: "2026-04-25T10:55:00Z"
+milestone: v2.0
+milestone_name: Pattern Analysis Release
+status: defining_requirements
+last_updated: "2026-06-10T00:00:00Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 12
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE.md: CGM Insights
 
-**Last Updated:** 2026-04-25
-**Status:** Phase 3 Complete
+**Last Updated:** 2026-06-10
+**Status:** Defining requirements for v2.0
 
 ---
 
@@ -23,9 +23,7 @@ progress:
 
 **Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
 
-**Architecture Constraint:** Python analysis engine (reusable library) with thin web frontend adapter. Build order: Core library first, then CLI for validation, then web interface.
-
-**Current Focus:** All phases complete
+**Current Focus:** Pattern Analysis Release — anomaly detection, sleep analysis, behavioral pattern analysis
 
 ---
 
@@ -33,28 +31,41 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| Phase | Phase 3: Web Interface + Reports |
-| Plan | 03-04 Complete |
-| Status | Complete |
-| Progress | `████████████` 100% |
+| Phase | Not started (defining requirements) |
+| Plan | — |
+| Status | Defining requirements |
+| Progress | `░░░░░░░░░░░░` 0% |
 
 ---
 
-## Performance Metrics
+## v1.0 Completed
 
-| Metric | Value |
-|--------|-------|
-| Phases Complete | 3/3 |
-| Plans Complete | 12/11 |
-| Requirements Addressed | 19/19 |
-| Days Since Start | 1 |
-| Blockers | None |
+| Phase | Status | Plans |
+|-------|--------|-------|
+| 1. Core Analysis Library | ✓ Complete | 4/4 |
+| 2. CLI Tool + Insights | ✓ Complete | 3/3 |
+| 3. Web Interface + Reports | ✓ Complete | 4/4 |
+
+**Shipped:** Data pipeline, validated metrics, CLI, pattern detection, web dashboard, AGP export
+
+---
+
+## v2.0 Scope
+
+**Target features:**
+- ANLY-02: Anomaly detection — unexplained highs/lows outside established patterns
+- ANLY-03: Sleep analysis — overnight patterns (10pm-6am inferred)
+- NEW: Behavioral pattern analysis — time-bucketed sliding windows, weekday/weekend segmentation, cross-day consistency
+
+**Deferred:**
+- ANLY-01 (post-meal) — no meal logging data
+- ANLY-04 (activity) — no activity data
 
 ---
 
 ## Accumulated Context
 
-### Key Decisions
+### Key Decisions (v1.0)
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
@@ -68,7 +79,6 @@ progress:
 | 2026-04-25 | Custom metric calculation | GlucoStats pandas 2.x compatibility issues; implemented fallback calculation |
 | 2026-04-25 | GMI_CAVEAT constant | Wellness disclaimer required per regulatory requirements |
 | 2026-04-25 | Typer CLI framework | Simple, Pythonic CLI framework with Rich integration |
-| 2026-04-25 | Single-command Typer app | `analyze` as default command for straightforward UX |
 | 2026-04-25 | asciichartpy for trend graphs | Correct package with plot function; asciichart lacks it |
 | 2026-04-25 | Rich tables for metrics | Professional terminal tables with color-coded target ranges |
 | 2026-04-25 | Visualization on by default | --viz enabled; users can disable with --no-viz |
@@ -87,44 +97,15 @@ progress:
 - **Architecture:** Python library first, CLI second, web last
 - **Regulatory:** Wellness language only, no medical advice
 - **Technology:** Polars, GlucoStats, FastAPI + HTMX, Typer, Rich, asciichartpy, Chart.js, ReportLab
-
-### Deferred Items
-
-- Advanced pattern detection (meal analysis)
-- Real-time CGM connection (v2+)
-- Multi-device sync (v2+)
+- **v2.0 data:** No external data sources (meals, activity) — analysis from glucose data alone
 
 ---
 
 ## Session Continuity
 
-**Entry Point:** All phases complete
+**Entry Point:** Starting v2.0 requirements
 
-**Next Action:** Verify work with /gsd-verify-work, then /gsd-next to mark project complete
-
-**Context for Continuation:**
-
-- Phase 1 COMPLETE: Core Analysis Library (4 plans)
-- Phase 2 COMPLETE: CLI Tool + Insights (3 plans)
-- Phase 3 COMPLETE: Web Interface + Reports (4 plans)
-- Core library: analyze_file(), format_results(), CGMReading, AnalysisResults
-- CLI: cgm-insights analyze <file> with --viz, --compare, --insights flags
-- Pattern detection: time-of-day, day-of-week analysis
-- Suggestions: wellness-language templates
-- Web: FastAPI app with upload endpoint and templates
-- Dashboard: Chart.js visualizations, metrics cards, patterns display
-- AGP Export: PDF generation with ReportLab, download endpoint
-- Tests: 202 passing, 91% coverage on web module
-
----
-
-## Phase Summary
-
-| Phase | Goal | Requirements | Status |
-|-------|------|--------------|--------|
-| 1 | Core Analysis Library | DATA-01 to METR-05 (10) | Complete (4/4 plans) |
-| 2 | CLI Tool + Insights | VIZ-01 to INSG-04 (7) | Complete (3/3 plans) |
-| 3 | Web Interface + Reports | RPT-01 to RPT-02 (2) | Complete (4/4 plans) |
+**Next Action:** `/gsd-new-milestone` (in progress — defining requirements)
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
