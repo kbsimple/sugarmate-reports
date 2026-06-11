@@ -24,6 +24,10 @@ from .overnight_patterns import (
     analyze_overnight_patterns,
     OvernightAnalysisResult,
 )
+from .anomaly_detection import (
+    analyze_anomalies,
+    AnomalyDetectionResult,
+)
 
 __all__ = [
     # Metrics
@@ -46,4 +50,7 @@ __all__ = [
     # Overnight pattern analysis (Phase 5)
     "analyze_overnight_patterns",
     "OvernightAnalysisResult",
+    # Anomaly detection (Phase 6)
+    "analyze_anomalies",
+    "AnomalyDetectionResult",
 ]

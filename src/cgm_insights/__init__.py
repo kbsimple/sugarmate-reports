@@ -37,6 +37,8 @@ from .analytics import (
     BehavioralPattern,
     analyze_overnight_patterns,
     OvernightAnalysisResult,
+    analyze_anomalies,
+    AnomalyDetectionResult,
 )
 from .output import (
     format_results,
@@ -72,6 +74,9 @@ __all__ = [
     # Overnight pattern analysis (Phase 5)
     "analyze_overnight_patterns",
     "OvernightAnalysisResult",
+    # Anomaly detection (Phase 6)
+    "analyze_anomalies",
+    "AnomalyDetectionResult",
     # Output
     "format_results",
     "format_quality_flags",

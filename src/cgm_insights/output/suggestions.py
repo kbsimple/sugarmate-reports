@@ -18,6 +18,7 @@ from cgm_insights.analytics.behavioral_patterns import (
     ConsistencyLabel,
 )
 from cgm_insights.analytics.overnight_patterns import OvernightAnalysisResult
+from cgm_insights.analytics.anomaly_detection import AnomalyDetectionResult
 from cgm_insights.models import AnalysisResults
 
 
@@ -250,6 +251,44 @@ SUGGESTION_TEMPLATES = {
         "category": SuggestionCategory.CONTROL,
         "priority": 4,
     },
+    "anomaly_summary_mild": {
+        "title": "Occasional unusual glucose patterns",
+        "description": (
+            "Your data shows some glucose readings that differ from your "
+            "personal patterns for those times of day."
+        ),
+        "action": (
+            "Consider noting what was different during those times to "
+            "understand the variation."
+        ),
+        "category": SuggestionCategory.VARIABILITY,
+        "priority": 4,
+    },
+    "anomaly_summary_moderate": {
+        "title": "Moderate unusual glucose patterns detected",
+        "description": (
+            "Some glucose readings this period were notably different from "
+            "your usual patterns for those time windows."
+        ),
+        "action": (
+            "Consider reviewing your routine during these periods and "
+            "discussing the patterns with your healthcare provider."
+        ),
+        "category": SuggestionCategory.CONTROL,
+        "priority": 3,
+    },
+    "anomaly_summary_severe": {
+        "title": "Significant unusual glucose patterns detected",
+        "description": (
+            "Some glucose readings showed large deviations from your "
+            "personal baseline for those times."
+        ),
+        "action": (
+            "Consider discussing these patterns with your healthcare provider."
+        ),
+        "category": SuggestionCategory.SAFETY,
+        "priority": 2,
+    },
 }
 
 
@@ -462,6 +501,53 @@ def generate_overnight_suggestions(
             priority=template["priority"],
             wellness_disclaimer=True,
         ))
+
+    suggestions.sort(key=lambda s: s.priority)
+    return suggestions
+
+
+def generate_anomaly_suggestions(
+    anomaly_result: AnomalyDetectionResult,
+) -> list[Suggestion]:
+    """Generate wellness-language suggestions from anomaly detection results.
+
+    Produces at most one suggestion per result — the highest-severity
+    tier observed. Never surfaces individual readings.
+
+    Args:
+        anomaly_result: Result from analyze_anomalies().
+
+    Returns:
+        List of Suggestion objects (0 or 1 items), sorted by priority.
+        Empty list if insufficient_data is True or no anomalies found.
+    """
+    if anomaly_result.insufficient_data:
+        return []
+
+    if anomaly_result.total_anomalies == 0:
+        return []
+
+    suggestions: list[Suggestion] = []
+
+    # Select the highest-severity template observed
+    if anomaly_result.severe_total > 0:
+        template_key = "anomaly_summary_severe"
+    elif anomaly_result.moderate_total > 0:
+        template_key = "anomaly_summary_moderate"
+    else:
+        template_key = "anomaly_summary_mild"
+
+    template = SUGGESTION_TEMPLATES[template_key]
+    suggestions.append(
+        Suggestion(
+            title=template["title"],
+            description=template["description"],
+            action=template["action"],
+            category=template["category"],
+            priority=template["priority"],
+            pattern_reference="Anomaly detection summary",
+        )
+    )
 
     suggestions.sort(key=lambda s: s.priority)
     return suggestions
