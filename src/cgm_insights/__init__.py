@@ -33,6 +33,8 @@ from .analytics import (
     check_minimum_data,
     GMI_CAVEAT,
     QUALITY_WARNING,
+    analyze_behavioral_patterns,
+    BehavioralPattern,
 )
 from .output import (
     format_results,
@@ -62,6 +64,9 @@ __all__ = [
     "check_minimum_data",
     "GMI_CAVEAT",
     "QUALITY_WARNING",
+    # Behavioral pattern analysis
+    "analyze_behavioral_patterns",
+    "BehavioralPattern",
     # Output
     "format_results",
     "format_quality_flags",
