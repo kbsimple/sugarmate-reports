@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
-status: defining_requirements
-last_updated: "2026-06-10T00:00:00Z"
+status: planning
+last_updated: "2026-06-11T00:00:00Z"
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -15,7 +15,7 @@ progress:
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-10
-**Status:** Defining requirements for v2.0
+**Status:** Roadmap defined, ready for planning
 
 ---
 
@@ -23,7 +23,7 @@ progress:
 
 **Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
 
-**Current Focus:** Pattern Analysis Release — anomaly detection, sleep analysis, behavioral pattern analysis
+**Current Focus:** v2.0 Pattern Analysis Release — behavioral patterns, sleep analysis, anomaly detection
 
 ---
 
@@ -31,9 +31,9 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| Phase | Not started (defining requirements) |
+| Phase | Phase 4: Behavioral Pattern Analysis |
 | Plan | — |
-| Status | Defining requirements |
+| Status | Ready for planning |
 | Progress | `░░░░░░░░░░░░` 0% |
 
 ---
@@ -42,24 +42,50 @@ progress:
 
 | Phase | Status | Plans |
 |-------|--------|-------|
-| 1. Core Analysis Library | ✓ Complete | 4/4 |
-| 2. CLI Tool + Insights | ✓ Complete | 3/3 |
-| 3. Web Interface + Reports | ✓ Complete | 4/4 |
+| 1. Core Analysis Library | Complete | 4/4 |
+| 2. CLI Tool + Insights | Complete | 3/3 |
+| 3. Web Interface + Reports | Complete | 4/4 |
 
 **Shipped:** Data pipeline, validated metrics, CLI, pattern detection, web dashboard, AGP export
 
 ---
 
-## v2.0 Scope
+## v2.0 Phases
 
-**Target features:**
-- ANLY-02: Anomaly detection — unexplained highs/lows outside established patterns
-- ANLY-03: Sleep analysis — overnight patterns (10pm-6am inferred)
-- NEW: Behavioral pattern analysis — time-bucketed sliding windows, weekday/weekend segmentation, cross-day consistency
+| Phase | Status | Plans |
+|-------|--------|-------|
+| 4. Behavioral Pattern Analysis | Not started | 0/0 |
+| 5. Sleep Analysis | Not started | 0/0 |
+| 6. Anomaly Detection | Not started | 0/0 |
 
-**Deferred:**
-- ANLY-01 (post-meal) — no meal logging data
-- ANLY-04 (activity) — no activity data
+**Scope:** 17 requirements across 3 phases
+
+---
+
+## v2.0 Requirements by Phase
+
+### Phase 4: Behavioral Pattern Analysis (6 requirements)
+- BHVR-01: Time buckets (30/60/120 min, sliding every 5 min)
+- BHVR-02: Weekday vs weekend segmentation
+- BHVR-03: Cross-day consistency scores
+- BHVR-04: Identify high-consistency and high-variability periods
+- BHVR-05: Actionable insights from patterns
+- BHVR-06: Wellness language throughout
+
+### Phase 5: Sleep Analysis (6 requirements)
+- SLEEP-01: 10pm-6am window analysis
+- SLEEP-02: Overnight metrics (mean, TIR, CV, TBR)
+- SLEEP-03: Weekday vs weekend overnight comparison
+- SLEEP-04: NGSI stability index
+- SLEEP-05: Overnight excursion detection
+- SLEEP-06: "Overnight" terminology (not "sleep")
+
+### Phase 6: Anomaly Detection (5 requirements)
+- ANLY-02: Statistical outlier detection (>2 SD from baseline)
+- ANLY-03: PISA artifact filtering
+- ANLY-04: Severity classification (mild/moderate/severe)
+- ANLY-05: Weekly anomaly summaries (no individual alerts)
+- ANLY-06: Wellness language throughout
 
 ---
 
@@ -92,6 +118,15 @@ progress:
 | 2026-04-25 | pytest-cov for coverage reporting | Coverage measurement for test quality |
 | 2026-04-25 | Test fixtures with TestClient | Isolated tests with session store reset |
 
+### Key Decisions (v2.0)
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-06-10 | 3-phase roadmap (coarse granularity) | Groups related features: behavioral patterns, sleep analysis, anomaly detection |
+| 2026-06-10 | Behavioral patterns first (Phase 4) | Establishes time-bucketed analysis foundation; provides baseline for anomaly detection |
+| 2026-06-10 | Sleep analysis second (Phase 5) | Builds on time-bucketing from Phase 4; focused overnight window analysis |
+| 2026-06-10 | Anomaly detection last (Phase 6) | Depends on behavioral baselines from Phase 4; uses overnight context from Phase 5 |
+
 ### Active Constraints
 
 - **Architecture:** Python library first, CLI second, web last
@@ -103,9 +138,11 @@ progress:
 
 ## Session Continuity
 
-**Entry Point:** Starting v2.0 requirements
+**Entry Point:** v2.0 roadmap created
 
-**Next Action:** `/gsd-new-milestone` (in progress — defining requirements)
+**Next Action:** `/gsd-plan-phase 4` to create execution plan for Behavioral Pattern Analysis
+
+**Session (2026-06-11):** Phase 4 context gathered — 4 gray areas discussed, CONTEXT.md written.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
