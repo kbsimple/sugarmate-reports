@@ -23,7 +23,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 ### v2.0 (Current)
 
 - [x] **Phase 4: Behavioral Pattern Analysis** - Users see time-bucketed patterns with cross-day consistency
-- [ ] **Phase 5: Sleep Analysis** - Users understand overnight glucose behavior
+- [x] **Phase 5: Sleep Analysis** - Users understand overnight glucose behavior
 - [ ] **Phase 6: Anomaly Detection** - Users identify unusual glucose deviations
 
 ---
@@ -140,8 +140,8 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Core library: overnight_patterns.py module with OvernightAnalysisResult and analysis functions
 - [x] 05-02-PLAN.md — Public API wiring: analytics/__init__.py and cgm_insights/__init__.py exports; overnight suggestion templates
-- [ ] 05-03-PLAN.md — Web integration: session storage, upload pipeline, results route, overnight_patterns.html component
-- [ ] 05-04-PLAN.md — CLI flag and test suite: --overnight flag, Rich table renderer, test_overnight_patterns.py
+- [x] 05-03-PLAN.md — Web integration: session storage, upload pipeline, results route, overnight_patterns.html component
+- [x] 05-04-PLAN.md — CLI flag and test suite: --overnight flag, Rich table renderer, test_overnight_patterns.py
 
 ---
 
@@ -172,7 +172,7 @@ Plans:
 | 2. CLI Tool + Insights | 3/3 | Complete | 02-01, 02-02, 02-03 |
 | 3. Web Interface + Reports | 4/4 | Complete | 03-01, 03-02, 03-03, 03-04 |
 | 4. Behavioral Pattern Analysis | 4/4 | Complete | 04-01, 04-02, 04-03, 04-04 |
-| 5. Sleep Analysis | 2/4 | In progress | 05-01, 05-02 |
+| 5. Sleep Analysis | 4/4 | Complete | 05-01, 05-02, 05-03, 05-04 |
 | 6. Anomaly Detection | 0/0 | Not started | - |
 
 ---
@@ -238,12 +238,12 @@ Plans:
 | BHVR-04 | Phase 4 | Complete (04-01) |
 | BHVR-05 | Phase 4 | Complete (04-01, 04-03, 04-04) |
 | BHVR-06 | Phase 4 | Complete (04-01, 04-03, 04-04) |
-| SLEEP-01 | Phase 5 | Planned (05-01, 05-03) |
-| SLEEP-02 | Phase 5 | Planned (05-01, 05-03) |
-| SLEEP-03 | Phase 5 | Planned (05-01, 05-03) |
-| SLEEP-04 | Phase 5 | Planned (05-01, 05-03) |
-| SLEEP-05 | Phase 5 | Planned (05-01, 05-03) |
-| SLEEP-06 | Phase 5 | Complete (05-02) |
+| SLEEP-01 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
+| SLEEP-02 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
+| SLEEP-03 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
+| SLEEP-04 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
+| SLEEP-05 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
+| SLEEP-06 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
 | ANLY-02 | Phase 6 | Pending |
 | ANLY-03 | Phase 6 | Pending |
 | ANLY-04 | Phase 6 | Pending |

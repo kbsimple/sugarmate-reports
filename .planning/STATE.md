@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
 status: in_progress
-last_updated: "2026-06-11T21:30:00Z"
+last_updated: "2026-06-11T22:00:00Z"
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
   completed_plans: 8
-  percent: 62
+  percent: 67
 ---
 
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 5 in progress — Plans 05-01, 05-02, 05-03, 05-04 complete
+**Status:** Phase 5 complete, Phase 6 ready for planning
 
 ---
 
@@ -31,10 +31,10 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| Phase | Phase 5: Sleep Analysis |
-| Plan | 03 (complete) |
-| Status | In progress |
-| Progress | `████████░░░░` 62% (Plan 8/13 complete) |
+| Phase | Phase 6: Anomaly Detection |
+| Plan | — |
+| Status | Ready for planning |
+| Progress | `████████░░░░` 67% (2/3 phases) |
 
 ---
 
@@ -55,7 +55,7 @@ progress:
 | Phase | Status | Plans |
 |-------|--------|-------|
 | 4. Behavioral Pattern Analysis | Complete | 4/4 |
-| 5. Sleep Analysis | In progress | 4/? |
+| 5. Sleep Analysis | Complete | 4/4 |
 | 6. Anomaly Detection | Not started | 0/0 |
 
 **Scope:** 17 requirements across 3 phases
@@ -143,7 +143,7 @@ progress:
 
 **Entry Point:** v2.0 roadmap created
 
-**Next Action:** Phase 5 complete — advance to Phase 6 (Anomaly Detection)
+**Next Action:** `/gsd-plan-phase 6` to create execution plan for Anomaly Detection
 
 **Session (2026-06-11):** Phase 4 complete — 4 plans executed (sliding-window behavioral analysis, public API wiring, web integration, CLI flag + tests). 221 tests passing. 6 code review findings fixed (dead suggestion integration, midnight-bucket suggestion selection, min_days threading, /data endpoint, CLI warning gap, empty-string guard).
 
@@ -154,6 +154,8 @@ progress:
 **Session (2026-06-11):** Phase 5 Plan 04 complete — --overnight/--no-overnight CLI flag added to analyze and download_and_analyze commands; _render_overnight_patterns() Rich table renderer added; 10-test overnight_patterns test suite created. 241 tests pass (221 + 10 new + 10 from 05-02). Commit a37ef4c.
 
 **Session (2026-06-11):** Phase 5 Plan 03 complete — overnight analysis wired through web layer: SessionData, upload.py, results.py template context, /data JSON endpoint, results.html include, overnight_patterns.html component. 231 tests pass. No "sleep" word in user-facing output. Commit 4891e09.
+
+**Session (2026-06-11):** Phase 5 complete — 4 plans executed (overnight core library, API wiring + suggestions, web integration, CLI + 10-test suite). 231 tests passing. 4 code review findings fixed (std_g None guard, post-filter insufficient_data check, MIN_NIGHTS_FOR_SPLIT=3, night_date-based day_type derivation). SLEEP-01–06 all verified ✓.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
