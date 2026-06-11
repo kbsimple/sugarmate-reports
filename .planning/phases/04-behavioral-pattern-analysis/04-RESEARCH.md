@@ -710,7 +710,7 @@ def _format_bucket_label(bucket_start_minute: int, window_min: int) -> str:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Display filtering: show all 864 buckets or only notable ones?**
    - What we know: 288 buckets × 3 window sizes = 864 `BehavioralPattern` objects. Showing all 288 per tab would be an overwhelming list.
