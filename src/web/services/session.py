@@ -20,11 +20,13 @@ class SessionData:
         results: Analysis results from file processing
         patterns: Detected patterns (time-of-day, day-of-week)
         raw_readings: Raw CGM readings for chart generation
+        behavioral_patterns: Behavioral pattern analysis result dict, or None
     """
 
     results: AnalysisResults
     patterns: list[PatternResult] = field(default_factory=list)
     raw_readings: list[dict] = field(default_factory=list)
+    behavioral_patterns: Optional[dict] = field(default=None)
 
 
 class SessionStore:
@@ -42,7 +44,8 @@ class SessionStore:
         session_id: str,
         results: AnalysisResults,
         patterns: Optional[list[PatternResult]] = None,
-        raw_readings: Optional[list[dict]] = None
+        raw_readings: Optional[list[dict]] = None,
+        behavioral_patterns: Optional[dict] = None,
     ) -> None:
         """Store analysis results for a session.
 
@@ -51,11 +54,13 @@ class SessionStore:
             results: Analysis results to store
             patterns: Optional detected patterns
             raw_readings: Optional raw readings for charts
+            behavioral_patterns: Optional behavioral analysis result (serialized dict)
         """
         self._sessions[session_id] = SessionData(
             results=results,
             patterns=patterns or [],
-            raw_readings=raw_readings or []
+            raw_readings=raw_readings or [],
+            behavioral_patterns=behavioral_patterns,
         )
 
     def get(self, session_id: str) -> Optional[SessionData]:
