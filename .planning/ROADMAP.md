@@ -14,9 +14,17 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 ## Phases
 
+### v1.0 (Complete)
+
 - [x] **Phase 1: Core Analysis Library** - Foundation data pipeline with validated metrics, reusable as independent library
 - [x] **Phase 2: CLI Tool + Insights** - Command-line interface validates core library, visualization and pattern detection
 - [x] **Phase 3: Web Interface + Reports** - Browser-based upload with interactive dashboard and AGP report export
+
+### v2.0 (Current)
+
+- [ ] **Phase 4: Behavioral Pattern Analysis** - Users see time-bucketed patterns with cross-day consistency
+- [ ] **Phase 5: Sleep Analysis** - Users understand overnight glucose behavior
+- [ ] **Phase 6: Anomaly Detection** - Users identify unusual glucose deviations
 
 ---
 
@@ -89,6 +97,68 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 ---
 
+### Phase 4: Behavioral Pattern Analysis
+**Goal:** Users can see how their glucose behavior varies across time periods and days, understanding which times are consistent and which vary.
+
+**Depends on:** Phase 3 (v1.0 complete)
+
+**Requirements:** BHVR-01, BHVR-02, BHVR-03, BHVR-04, BHVR-05, BHVR-06
+
+**Success Criteria** (what must be TRUE):
+1. User can view glucose patterns by time bucket (30/60/120 min windows sliding every 5 minutes)
+2. User can compare weekday vs weekend patterns for each time period
+3. User can see consistency scores showing how similar behavior is across days for each time period
+4. User receives wellness-framed insights identifying predictable periods and variable periods
+5. System surfaces actionable suggestions from behavioral patterns (e.g., consistent lunch timing)
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Core library: BehavioralPattern model, sliding-window algorithm, wellness suggestion templates
+- [ ] 04-02-PLAN.md — Public API wiring: analytics/__init__.py and cgm_insights/__init__.py exports
+- [ ] 04-03-PLAN.md — Web integration: session storage, upload pipeline, results route, behavioral_patterns.html tab component
+- [ ] 04-04-PLAN.md — CLI flag and test suite: --behavioral flag, Rich table renderer, test_behavioral_patterns.py
+
+---
+
+### Phase 5: Sleep Analysis
+**Goal:** Users can understand their overnight glucose patterns and stability without needing sleep tracking data.
+
+**Depends on:** Phase 4 (behavioral patterns provide time-bucketing foundation)
+
+**Requirements:** SLEEP-01, SLEEP-02, SLEEP-03, SLEEP-04, SLEEP-05, SLEEP-06
+
+**Success Criteria** (what must be TRUE):
+1. User can view overnight glucose metrics (mean glucose, TIR, CV, time below range) for 10pm-6am window
+2. User can compare weekday vs weekend overnight patterns (stability and control differences)
+3. User can see NGSI-style stability index quantifying overnight glycemic stability
+4. User is notified of sustained overnight excursions (highs/lows during overnight window)
+5. All insights use "overnight" and "10pm-6am window" terminology, not "sleep" claims
+
+**Plans:**
+- [ ] TBD
+
+---
+
+### Phase 6: Anomaly Detection
+**Goal:** Users can identify glucose readings that deviate significantly from their personal baseline without being overwhelmed by alerts.
+
+**Depends on:** Phase 4 (behavioral patterns establish baseline), Phase 5 (overnight context for anomaly context)
+
+**Requirements:** ANLY-02, ANLY-03, ANLY-04, ANLY-05, ANLY-06
+
+**Success Criteria** (what must be TRUE):
+1. User can view detected anomalies (values >2 SD from time-of-day/day-of-week baseline)
+2. Anomalies exclude PISA artifacts (pressure-induced sensor attenuation) to prevent false positives
+3. Anomalies are classified by severity (mild, moderate, severe) based on deviation magnitude and duration
+4. User sees weekly summary of anomaly patterns (aggregate counts, time distribution) rather than individual alerts
+5. All anomaly insights use wellness language ("unusual pattern" not "abnormal")
+
+**Plans:**
+- [ ] TBD
+
+---
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -96,6 +166,9 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 | 1. Core Analysis Library | 4/4 | Complete | 01-01, 01-02, 01-03, 01-04 |
 | 2. CLI Tool + Insights | 3/3 | Complete | 02-01, 02-02, 02-03 |
 | 3. Web Interface + Reports | 4/4 | Complete | 03-01, 03-02, 03-03, 03-04 |
+| 4. Behavioral Pattern Analysis | 0/4 | In progress | - |
+| 5. Sleep Analysis | 0/0 | Not started | - |
+| 6. Anomaly Detection | 0/0 | Not started | - |
 
 ---
 
@@ -117,9 +190,16 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 - FastAPI + HTMX for web interface
 - Typer for CLI
 
+**v2.0 Architecture:**
+- Builds on existing core library, CLI, and web interfaces
+- New analysis modules integrate into existing pipeline
+- All features accessible via library API, CLI flags, and web UI
+
 ---
 
 ## Coverage
+
+### v1.0 Requirements (Complete)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -143,11 +223,35 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 | RPT-01 | Phase 3 | Complete (03-01, 03-02) |
 | RPT-02 | Phase 3 | Complete (03-03) |
 
+### v2.0 Requirements (Current)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| BHVR-01 | Phase 4 | Planned (04-01, 04-02, 04-03, 04-04) |
+| BHVR-02 | Phase 4 | Planned (04-01, 04-03, 04-04) |
+| BHVR-03 | Phase 4 | Planned (04-01) |
+| BHVR-04 | Phase 4 | Planned (04-01) |
+| BHVR-05 | Phase 4 | Planned (04-01, 04-03, 04-04) |
+| BHVR-06 | Phase 4 | Planned (04-01, 04-03, 04-04) |
+| SLEEP-01 | Phase 5 | Pending |
+| SLEEP-02 | Phase 5 | Pending |
+| SLEEP-03 | Phase 5 | Pending |
+| SLEEP-04 | Phase 5 | Pending |
+| SLEEP-05 | Phase 5 | Pending |
+| SLEEP-06 | Phase 5 | Pending |
+| ANLY-02 | Phase 6 | Pending |
+| ANLY-03 | Phase 6 | Pending |
+| ANLY-04 | Phase 6 | Pending |
+| ANLY-05 | Phase 6 | Pending |
+| ANLY-06 | Phase 6 | Pending |
+
 **Summary:**
-- v1 requirements: 19 total
-- Phase 1 complete: 10
-- Phase 2 complete: 7
-- Phase 3 complete: 2
+- v1.0 requirements: 19 total (complete)
+- v2.0 requirements: 17 total
+- Phase 4: 6 requirements (all planned)
+- Phase 5: 6 requirements
+- Phase 6: 5 requirements
+- Coverage: 17/17 (100%)
 
 ---
-*Last updated: 2026-04-25*
+*Last updated: 2026-06-11*
