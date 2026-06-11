@@ -112,6 +112,13 @@
         {% include 'components/daily_patterns.html' %}
     </div>
 
+    <!-- Behavioral Patterns (Phase 4) -->
+    <div class="mb-6">
+        {% with behavioral_patterns=behavioral_patterns %}
+        {% include 'components/behavioral_patterns.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Patterns and Suggestions -->
     <div class="mb-6">
         {% with patterns=patterns, suggestions=suggestions %}
