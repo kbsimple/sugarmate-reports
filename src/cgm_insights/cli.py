@@ -37,6 +37,10 @@ from cgm_insights.analytics.patterns import (
     detect_time_of_day_patterns,
     detect_day_of_week_patterns,
 )
+from cgm_insights.analytics.behavioral_patterns import (
+    analyze_behavioral_patterns,
+    ConsistencyLabel,
+)
 from cgm_insights.output.suggestions import (
     generate_suggestions,
     format_suggestions_rich,
@@ -49,6 +53,62 @@ app = typer.Typer(
 )
 
 
+def _render_behavioral_patterns(
+    result,
+    console: Console,
+) -> None:
+    """Render behavioral patterns as a Rich table per window size.
+
+    Shows bucket label, consistency label, average glucose, and CV score
+    for Consistent and Variable buckets (Moderate omitted to reduce noise).
+
+    Args:
+        result: BehavioralAnalysisResult from analyze_behavioral_patterns().
+        console: Rich Console for output.
+    """
+    from rich.table import Table
+
+    console.print("\n[bold cyan]Behavioral Patterns[/bold cyan]")
+    console.print(f"[dim]({result.total_days} days of data)[/dim]\n")
+
+    for window_min in result.window_sizes:
+        window_patterns = [
+            p for p in result.patterns
+            if p.window_size_min == window_min
+        ]
+        notable = [
+            p for p in window_patterns
+            if p.consistency_label in (ConsistencyLabel.CONSISTENT, ConsistencyLabel.VARIABLE)
+        ]
+        if not notable:
+            continue
+
+        table = Table(
+            title=f"{window_min}-Minute Windows — Notable Periods",
+            show_header=True,
+            header_style="bold",
+        )
+        table.add_column("Time", style="white", width=14)
+        table.add_column("Consistency", style="cyan", width=12)
+        table.add_column("Avg Glucose", style="white", width=12)
+        table.add_column("CV Score", style="dim", width=10)
+
+        for pattern in notable:
+            label_style = (
+                "green" if pattern.consistency_label == ConsistencyLabel.CONSISTENT
+                else "yellow"
+            )
+            table.add_row(
+                pattern.bucket_label,
+                f"[{label_style}]{pattern.consistency_label.value}[/{label_style}]",
+                f"{pattern.avg_glucose:.0f} mg/dL",
+                f"{pattern.cv_score:.1f}%",
+            )
+
+        console.print(table)
+        console.print()
+
+
 def _run_analysis(
     file_path: Path,
     start_date: Optional[str],
@@ -57,6 +117,7 @@ def _run_analysis(
     visualize: bool,
     compare: bool,
     insights: bool,
+    behavioral: bool,
     console: Console,
 ) -> None:
     """Run analysis on a local file and print results to console."""
@@ -71,7 +132,7 @@ def _run_analysis(
     )
 
     readings = None
-    if visualize or compare or insights:
+    if visualize or compare or insights or behavioral:
         parser = get_parser(str(file_path))
         readings = parser.parse(str(file_path), start_date=start, end_date=end)
         if exclude_warmup and readings:
@@ -131,6 +192,18 @@ def _run_analysis(
     elif insights and not readings:
         console.print("\n[yellow]Insights require data. No readings available.[/yellow]")
 
+    if behavioral and readings:
+        try:
+            behavioral_result = analyze_behavioral_patterns(readings)
+            if behavioral_result.insufficient_data:
+                console.print(
+                    "\n[yellow]Behavioral patterns require at least 5 days of data.[/yellow]"
+                )
+            else:
+                _render_behavioral_patterns(behavioral_result, console)
+        except Exception as e:
+            console.print(f"\n[yellow]Could not generate behavioral patterns: {e}[/yellow]")
+
     console.print(f"\n[dim]Note: {GMI_CAVEAT}[/dim]")
 
 
@@ -162,6 +235,11 @@ def analyze(
     insights: bool = typer.Option(
         True, "--insights/--no-insights", help="Show time-of-day and day-of-week patterns",
     ),
+    behavioral: bool = typer.Option(
+        True,
+        "--behavioral/--no-behavioral",
+        help="Show time-bucketed behavioral patterns (30/60/120 min windows)",
+    ),
 ) -> None:
     """Analyze CGM data from a local file and display metrics.
 
@@ -172,7 +250,7 @@ def analyze(
     """
     console = Console()
     try:
-        _run_analysis(file_path, start_date, end_date, exclude_warmup, visualize, compare, insights, console)
+        _run_analysis(file_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, console)
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
@@ -202,6 +280,11 @@ def download_and_analyze(
     insights: bool = typer.Option(
         True, "--insights/--no-insights", help="Show time-of-day and day-of-week patterns",
     ),
+    behavioral: bool = typer.Option(
+        True,
+        "--behavioral/--no-behavioral",
+        help="Show time-bucketed behavioral patterns (30/60/120 min windows)",
+    ),
 ) -> None:
     """Download a CGM data file from a URL and analyze it.
 
@@ -228,7 +311,7 @@ def download_and_analyze(
             tmp_path = raw_path.with_name(raw_path.name + suffix)
             raw_path.rename(tmp_path)
             console.print("[green]Download complete.[/green]\n")
-            _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, console)
+            _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, console)
         finally:
             tmp_path.unlink(missing_ok=True)
 
