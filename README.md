@@ -113,6 +113,32 @@ anomalies  = analyze_anomalies(results.readings)
 
 ---
 
+## Deploy on Render
+
+The repo includes a `render.yaml` that pre-configures everything. The only manual step is entering three fields in the Render dashboard.
+
+1. Go to [render.com](https://render.com) → **New** → **Web Service**
+2. Connect the `sugarmate-reports` GitHub repo
+3. Fill in:
+
+| Field | Value |
+|-------|-------|
+| **Build command** | `pip install -e .` |
+| **Start command** | `uvicorn web.app:app --host 0.0.0.0 --port $PORT` |
+
+4. Add environment variables:
+
+| Key | Value |
+|-----|-------|
+| `PYTHONPATH` | `src` |
+| `ALLOWED_ORIGINS` | *(leave blank on first deploy; set to your `https://your-app.onrender.com` URL after)* |
+
+5. Click **Create Web Service**.
+
+> **Note:** The free tier spins down after 15 minutes of inactivity — the first request after idle takes ~30 seconds. Upgrade to the $7/month Starter tier to keep it warm.
+
+---
+
 ## Development
 
 ```bash
