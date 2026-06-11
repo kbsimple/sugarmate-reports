@@ -75,8 +75,27 @@ def test_fewer_than_5_days_returns_insufficient_data():
 # --- Test 3: Exactly 5 distinct days returns insufficient_data=False and produces patterns ---
 
 def test_exactly_5_days_produces_patterns():
-    """Five days of data meets the threshold and should produce behavioral patterns."""
-    readings = create_readings_for_n_days(5)
+    """Five days of data meets the threshold and should produce behavioral patterns.
+
+    Uses glucose values that vary by both day and minute-of-day so that different
+    time buckets get different CV scores (non-degenerate p25 != p75), preventing
+    the uniform-CV guard from suppressing all patterns.
+    """
+    readings = []
+    start = datetime(2024, 1, 8, 0, 0)
+    # Day offsets: vary baseline per day AND add a reading-position offset so
+    # different buckets get genuinely different per-bucket CV distributions.
+    day_bases = [80.0, 100.0, 120.0, 140.0, 160.0]
+    for day, base in enumerate(day_bases):
+        day_start = start + timedelta(days=day)
+        for i, minute in enumerate(range(0, 1440, 5)):
+            # Add a small oscillation that differs by bucket position
+            glucose = base + (i % 7) * 2.0
+            readings.append(CGMReading(
+                timestamp=day_start + timedelta(minutes=minute),
+                glucose_mg_dl=glucose,
+                source="test",
+            ))
     result = analyze_behavioral_patterns(readings)
     assert result.insufficient_data is False
     assert result.total_days == 5
@@ -200,8 +219,24 @@ def test_weekend_avg_none_when_insufficient_weekend_data():
 # --- Test 10: All three default window sizes present in result ---
 
 def test_all_three_window_sizes_in_result():
-    """7 days of data should produce patterns for 30-, 60-, and 120-minute windows."""
-    readings = create_readings_for_n_days(7)
+    """7 days of data should produce patterns for 30-, 60-, and 120-minute windows.
+
+    Uses glucose values that vary by both day and minute-of-day so that different
+    time buckets get different CV scores (non-degenerate p25 != p75), preventing
+    the uniform-CV guard from suppressing all patterns.
+    """
+    readings = []
+    start = datetime(2024, 1, 8, 0, 0)
+    day_bases = [80.0, 95.0, 110.0, 125.0, 140.0, 155.0, 170.0]
+    for day, base in enumerate(day_bases):
+        day_start = start + timedelta(days=day)
+        for i, minute in enumerate(range(0, 1440, 5)):
+            glucose = base + (i % 7) * 2.0
+            readings.append(CGMReading(
+                timestamp=day_start + timedelta(minutes=minute),
+                glucose_mg_dl=glucose,
+                source="test",
+            ))
     result = analyze_behavioral_patterns(readings)
     assert not result.insufficient_data
     window_sizes_in_patterns = {p.window_size_min for p in result.patterns}

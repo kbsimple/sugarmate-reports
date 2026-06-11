@@ -210,7 +210,6 @@ def _compute_all_buckets(
                 pl.col("glucose").mean().alias("daily_mean"),
                 pl.col("glucose").count().alias("count"),
             )
-            .filter(pl.col("count") >= 1)
         )
         if daily.height < min_days:
             continue
@@ -257,6 +256,11 @@ def _apply_consistency_labels(buckets: list[dict]) -> list[dict]:
     cv_series = pl.Series("cv", [b["cv_score"] for b in buckets])
     p25 = cv_series.quantile(0.25)
     p75 = cv_series.quantile(0.75)
+    # Degenerate case: all CV scores are identical (p25 == p75 means zero spread).
+    # Labeling in this case floods every bucket with CONSISTENT, producing redundant
+    # suggestions. Skip labeling entirely and return no buckets.
+    if p25 == p75:
+        return []
     for b in buckets:
         if b["cv_score"] <= p25:
             b["consistency_label"] = ConsistencyLabel.CONSISTENT
