@@ -15,7 +15,7 @@ progress:
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 6 in progress — Plan 06-01 complete
+**Status:** Phase 6 in progress — Plan 06-02 complete
 
 ---
 
@@ -32,9 +32,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | Phase 6: Anomaly Detection |
-| Plan | 06-01 complete |
+| Plan | 06-02 complete |
 | Status | In progress |
-| Progress | `████████░░░░` 67% (2/3 phases, 1/4 plans in Phase 6) |
+| Progress | `████████░░░░` 67% (2/3 phases, 2/4 plans in Phase 6) |
 
 ---
 
@@ -56,7 +56,7 @@ progress:
 |-------|--------|-------|
 | 4. Behavioral Pattern Analysis | Complete | 4/4 |
 | 5. Sleep Analysis | Complete | 4/4 |
-| 6. Anomaly Detection | In progress | 1/4 |
+| 6. Anomaly Detection | In progress | 2/4 |
 
 **Scope:** 17 requirements across 3 phases
 
@@ -143,7 +143,7 @@ progress:
 
 **Entry Point:** v2.0 roadmap created
 
-**Next Action:** `/gsd-execute-phase` to execute Plan 06-02 (Public API wiring)
+**Next Action:** `/gsd-execute-phase` to execute Plan 06-03
 
 **Session (2026-06-11):** Phase 4 complete — 4 plans executed (sliding-window behavioral analysis, public API wiring, web integration, CLI flag + tests). 221 tests passing. 6 code review findings fixed (dead suggestion integration, midnight-bucket suggestion selection, min_days threading, /data endpoint, CLI warning gap, empty-string guard).
 
@@ -158,6 +158,8 @@ progress:
 **Session (2026-06-11):** Phase 5 complete — 4 plans executed (overnight core library, API wiring + suggestions, web integration, CLI + 10-test suite). 231 tests passing. 4 code review findings fixed (std_g None guard, post-filter insufficient_data check, MIN_NIGHTS_FOR_SPLIT=3, night_date-based day_type derivation). SLEEP-01–06 all verified ✓.
 
 **Session (2026-06-11):** Phase 6 Plan 01 complete — anomaly_detection.py created with PISA artifact filter (per-day drop/recovery signature), two-step Polars bucket baseline (_compute_bucket_baselines), severity classifier (2/3/4 SD), weekly summary builder (_build_weekly_summaries), and analyze_anomalies() public entry. All 231 existing tests pass. Commit 6f166ce.
+
+**Session (2026-06-11):** Phase 6 Plan 02 complete — analyze_anomalies and AnomalyDetectionResult wired into analytics/__init__ and cgm_insights/__init__ public APIs; generate_anomaly_suggestions() added with 3 severity-tiered wellness-language templates. At-most-one-suggestion design selects highest severity tier. All 231 tests pass. Commit 8dfa4e0.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
