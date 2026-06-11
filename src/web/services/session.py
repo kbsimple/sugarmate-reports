@@ -22,6 +22,7 @@ class SessionData:
         raw_readings: Raw CGM readings for chart generation
         behavioral_patterns: Behavioral pattern analysis result dict, or None
         overnight_patterns: Overnight pattern analysis result dict, or None
+        anomaly_detection: Anomaly detection result dict, or None
     """
 
     results: AnalysisResults
@@ -29,6 +30,7 @@ class SessionData:
     raw_readings: list[dict] = field(default_factory=list)
     behavioral_patterns: Optional[dict] = field(default=None)
     overnight_patterns: Optional[dict] = field(default=None)
+    anomaly_detection: Optional[dict] = field(default=None)
 
 
 class SessionStore:
@@ -49,6 +51,7 @@ class SessionStore:
         raw_readings: Optional[list[dict]] = None,
         behavioral_patterns: Optional[dict] = None,
         overnight_patterns: Optional[dict] = None,
+        anomaly_detection: Optional[dict] = None,
     ) -> None:
         """Store analysis results for a session.
 
@@ -59,6 +62,7 @@ class SessionStore:
             raw_readings: Optional raw readings for charts
             behavioral_patterns: Optional behavioral analysis result (serialized dict)
             overnight_patterns: Optional overnight analysis result (serialized dict)
+            anomaly_detection: Optional anomaly detection result (serialized dict)
         """
         self._sessions[session_id] = SessionData(
             results=results,
@@ -66,6 +70,7 @@ class SessionStore:
             raw_readings=raw_readings or [],
             behavioral_patterns=behavioral_patterns,
             overnight_patterns=overnight_patterns,
+            anomaly_detection=anomaly_detection,
         )
 
     def get(self, session_id: str) -> Optional[SessionData]:

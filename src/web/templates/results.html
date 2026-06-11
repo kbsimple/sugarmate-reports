@@ -126,6 +126,13 @@
         {% endwith %}
     </div>
 
+    <!-- Anomaly Detection (Phase 6) -->
+    <div class="mb-6">
+        {% with anomaly_detection=anomaly_detection %}
+        {% include 'components/anomaly_detection.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Patterns and Suggestions -->
     <div class="mb-6">
         {% with patterns=patterns, suggestions=suggestions %}

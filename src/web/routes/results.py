@@ -11,7 +11,13 @@ from ..services.session import session_store
 from cgm_insights import format_results, format_quality_flags
 from cgm_insights.analytics.behavioral_patterns import BehavioralAnalysisResult
 from cgm_insights.analytics.overnight_patterns import OvernightAnalysisResult
-from cgm_insights.output.suggestions import generate_suggestions, generate_behavioral_suggestions, generate_overnight_suggestions
+from cgm_insights.analytics.anomaly_detection import AnomalyDetectionResult
+from cgm_insights.output.suggestions import (
+    generate_suggestions,
+    generate_behavioral_suggestions,
+    generate_overnight_suggestions,
+    generate_anomaly_suggestions,
+)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/web/templates")
@@ -70,6 +76,15 @@ async def get_results(request: Request, session_id: str):
         suggestions = suggestions + generate_overnight_suggestions(overnight_result)
         suggestions.sort(key=lambda s: s.priority)
 
+    # Extract anomaly detection from session (Phase 6)
+    anomaly_detection_data = session_data.anomaly_detection  # dict or None
+
+    # Add anomaly suggestions if analysis succeeded
+    if anomaly_detection_data and not anomaly_detection_data.get("insufficient_data", True):
+        anomaly_result = AnomalyDetectionResult.model_validate(anomaly_detection_data)
+        suggestions = suggestions + generate_anomaly_suggestions(anomaly_result)
+        suggestions.sort(key=lambda s: s.priority)
+
     # Format patterns for template
     formatted_patterns = [
         {
@@ -119,6 +134,7 @@ async def get_results(request: Request, session_id: str):
             "glucose_readings": raw_readings,
             "behavioral_patterns": behavioral_patterns_data,  # Phase 4
             "overnight_patterns": overnight_patterns_data,  # Phase 5
+            "anomaly_detection": anomaly_detection_data,  # Phase 6
         }
     )
 
@@ -161,4 +177,5 @@ async def get_results_data(session_id: str):
         "glucose_readings": session_data.raw_readings,
         "behavioral_patterns": session_data.behavioral_patterns,
         "overnight_patterns": session_data.overnight_patterns,
+        "anomaly_detection": session_data.anomaly_detection,
     }

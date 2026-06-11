@@ -18,6 +18,7 @@ from cgm_insights.ingestion import get_parser, exclude_warmup_period
 from cgm_insights.analytics import detect_time_of_day_patterns, detect_day_of_week_patterns
 from cgm_insights.analytics.behavioral_patterns import analyze_behavioral_patterns
 from cgm_insights.analytics.overnight_patterns import analyze_overnight_patterns
+from cgm_insights.analytics.anomaly_detection import analyze_anomalies
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/web/templates")
@@ -139,6 +140,10 @@ async def upload_file(
             overnight_result = analyze_overnight_patterns(readings)
             overnight_patterns_dict = overnight_result.model_dump()
 
+            # Anomaly detection (Phase 6)
+            anomaly_result = analyze_anomalies(readings)
+            anomaly_detection_dict = anomaly_result.model_dump()
+
             # Convert readings to chart format (limit for web display)
             raw_readings = [
                 {
@@ -157,6 +162,7 @@ async def upload_file(
                 raw_readings=raw_readings,
                 behavioral_patterns=behavioral_patterns_dict,
                 overnight_patterns=overnight_patterns_dict,
+                anomaly_detection=anomaly_detection_dict,
             )
 
             return JSONResponse({

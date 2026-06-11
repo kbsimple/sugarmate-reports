@@ -1,0 +1,131 @@
+{# Anomaly Detection component.
+
+Parameters:
+  - anomaly_detection: dict from AnomalyDetectionResult.model_dump(), or None.
+    Keys used: insufficient_data (bool), total_anomalies (int),
+    mild_total (int), moderate_total (int), severe_total (int),
+    pisa_artifacts_filtered (int), days_analyzed (int),
+    weekly_summaries (list of WeeklySummary dicts).
+
+WeeklySummary keys used: week_label (str), total_anomalies (int),
+  mild_count (int), moderate_count (int), severe_count (int),
+  high_count (int), low_count (int), most_affected_period (str|null).
+#}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg font-bold">Unusual Glucose Patterns</h3>
+
+        {% if not anomaly_detection or anomaly_detection.insufficient_data %}
+        <div class="alert alert-info">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 class="stroke-current shrink-0 w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h3 class="font-bold">Not enough data for pattern baseline</h3>
+                <p class="text-sm mt-1">At least 5 days of glucose data are needed to
+                establish a personal baseline for unusual pattern detection.</p>
+            </div>
+        </div>
+        {% else %}
+
+        {# Top-level stats row #}
+        <div class="stats stats-horizontal shadow w-full mb-4">
+            {% if anomaly_detection.total_anomalies is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Unusual Patterns</div>
+                <div class="stat-value text-lg">{{ anomaly_detection.total_anomalies }}</div>
+                <div class="stat-desc">this period</div>
+            </div>
+            {% endif %}
+            {% if anomaly_detection.mild_total is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Mild</div>
+                <div class="stat-value text-lg">{{ anomaly_detection.mild_total }}</div>
+                <div class="stat-desc">2–3× typical</div>
+            </div>
+            {% endif %}
+            {% if anomaly_detection.moderate_total is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Moderate</div>
+                <div class="stat-value text-lg">{{ anomaly_detection.moderate_total }}</div>
+                <div class="stat-desc">3–4× typical</div>
+            </div>
+            {% endif %}
+            {% if anomaly_detection.severe_total is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Significant</div>
+                <div class="stat-value text-lg">{{ anomaly_detection.severe_total }}</div>
+                <div class="stat-desc">4×+ typical</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if anomaly_detection.pisa_artifacts_filtered > 0 %}
+        <p class="text-xs text-base-content/50 mt-2">
+            {{ anomaly_detection.pisa_artifacts_filtered }} sensor artifact
+            reading{{ "s" if anomaly_detection.pisa_artifacts_filtered != 1 else "" }}
+            excluded from analysis.
+        </p>
+        {% endif %}
+
+        {% if anomaly_detection.weekly_summaries %}
+        <div class="mt-4">
+            <h4 class="font-semibold text-sm mb-2">Weekly Breakdown</h4>
+            {% for week in anomaly_detection.weekly_summaries %}
+            <div class="flex items-start gap-3 mb-3">
+                <div class="text-xs text-base-content/60 w-28 shrink-0 pt-0.5">
+                    {{ week.week_label }}
+                </div>
+                <div class="flex flex-wrap gap-1 flex-1">
+                    {% if week.severe_count > 0 %}
+                    <span class="badge badge-error badge-sm">
+                        {{ week.severe_count }} significant
+                    </span>
+                    {% endif %}
+                    {% if week.moderate_count > 0 %}
+                    <span class="badge badge-warning badge-sm">
+                        {{ week.moderate_count }} moderate
+                    </span>
+                    {% endif %}
+                    {% if week.mild_count > 0 %}
+                    <span class="badge badge-info badge-sm">
+                        {{ week.mild_count }} mild
+                    </span>
+                    {% endif %}
+                    {% if week.high_count > 0 %}
+                    <span class="text-xs text-base-content/60">
+                        {{ week.high_count }} elevated,
+                    </span>
+                    {% endif %}
+                    {% if week.low_count > 0 %}
+                    <span class="text-xs text-base-content/60">
+                        {{ week.low_count }} lower
+                    </span>
+                    {% endif %}
+                    {% if week.most_affected_period %}
+                    <span class="text-xs text-base-content/50">
+                        · most: {{ week.most_affected_period }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% endif %}{# end if not insufficient_data #}
+
+        {# Wellness disclaimer — always shown #}
+        <div class="bg-base-200 rounded-lg p-2 mt-4">
+            <p class="text-xs text-base-content/60">
+                <strong>Wellness Information Only:</strong> These patterns are for
+                informational purposes only and are not medical advice. Unusual patterns
+                may reflect normal variation, activity, food, or other factors. Always
+                discuss glucose patterns with your healthcare provider.
+            </p>
+        </div>
+
+    </div>
+</div>
