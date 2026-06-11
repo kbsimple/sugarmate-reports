@@ -14,6 +14,12 @@ from .patterns import (
     PatternType,
     PatternSeverity,
 )
+from .behavioral_patterns import (
+    analyze_behavioral_patterns,
+    BehavioralPattern,
+    BehavioralAnalysisResult,
+    ConsistencyLabel,
+)
 
 __all__ = [
     # Metrics
@@ -28,4 +34,9 @@ __all__ = [
     "PatternResult",
     "PatternType",
     "PatternSeverity",
+    # Behavioral pattern analysis
+    "analyze_behavioral_patterns",
+    "BehavioralPattern",
+    "BehavioralAnalysisResult",
+    "ConsistencyLabel",
 ]
