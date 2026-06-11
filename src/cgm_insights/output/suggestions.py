@@ -17,6 +17,7 @@ from cgm_insights.analytics.behavioral_patterns import (
     BehavioralAnalysisResult,
     ConsistencyLabel,
 )
+from cgm_insights.analytics.overnight_patterns import OvernightAnalysisResult
 from cgm_insights.models import AnalysisResults
 
 
@@ -186,6 +187,69 @@ SUGGESTION_TEMPLATES = {
         "category": SuggestionCategory.CONTROL,
         "priority": 4,
     },
+    "overnight_stable": {
+        "title": "Consistent overnight glucose pattern",
+        "description": (
+            "Your glucose during the 10pm–6am window shows consistent patterns "
+            "across nights."
+        ),
+        "action": (
+            "Consider noting what contributes to this consistency in your "
+            "evening routine."
+        ),
+        "category": SuggestionCategory.TIMING,
+        "priority": 3,
+    },
+    "overnight_variable": {
+        "title": "Variable overnight glucose pattern",
+        "description": (
+            "Your glucose during the 10pm–6am window varies noticeably "
+            "across nights."
+        ),
+        "action": (
+            "Consider exploring what differs on nights with higher or lower "
+            "overnight glucose."
+        ),
+        "category": SuggestionCategory.VARIABILITY,
+        "priority": 3,
+    },
+    "overnight_low_excursions": {
+        "title": "Low overnight glucose periods detected",
+        "description": (
+            "Your 10pm–6am window shows some nights with lower glucose readings."
+        ),
+        "action": (
+            "Be aware of this pattern. Consider discussing low overnight glucose "
+            "with your healthcare provider."
+        ),
+        "category": SuggestionCategory.SAFETY,
+        "priority": 2,
+    },
+    "overnight_high_excursions": {
+        "title": "Elevated overnight glucose periods detected",
+        "description": (
+            "Your 10pm–6am window shows some nights with higher glucose readings."
+        ),
+        "action": (
+            "Consider exploring what might contribute to elevated overnight glucose."
+        ),
+        "category": SuggestionCategory.CONTROL,
+        "priority": 3,
+    },
+    "overnight_weekday_weekend_diff": {
+        "title": "Weekday vs weekend overnight difference",
+        "description": (
+            "Your overnight glucose (10pm–6am) tends to differ between "
+            "weekday nights ({weekday_avg:.0f} mg/dL) and weekend nights "
+            "({weekend_avg:.0f} mg/dL)."
+        ),
+        "action": (
+            "Consider whether evening routines differ between weekdays "
+            "and weekends."
+        ),
+        "category": SuggestionCategory.CONTROL,
+        "priority": 4,
+    },
 }
 
 
@@ -296,6 +360,103 @@ def generate_behavioral_suggestions(
                 bucket_label=best_diff_pattern.bucket_label,
                 weekday_avg=best_diff_pattern.weekday_avg_glucose,
                 weekend_avg=best_diff_pattern.weekend_avg_glucose,
+            ),
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+
+    suggestions.sort(key=lambda s: s.priority)
+    return suggestions
+
+
+def generate_overnight_suggestions(
+    overnight_result: OvernightAnalysisResult,
+) -> list[Suggestion]:
+    """Generate actionable suggestions from overnight pattern analysis.
+
+    Selects up to one stability suggestion, one excursion suggestion per type,
+    and a weekday/weekend difference suggestion when applicable. All suggestions
+    use wellness language. Never uses "sleep" or clinical metric names.
+
+    Args:
+        overnight_result: Result from analyze_overnight_patterns().
+
+    Returns:
+        List of Suggestion objects sorted by priority (1=highest).
+    """
+    if overnight_result.insufficient_data:
+        return []
+
+    suggestions: list[Suggestion] = []
+
+    # Stability suggestion based on stability_label
+    if overnight_result.stability_label == "Stable":
+        template = SUGGESTION_TEMPLATES["overnight_stable"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference="Overnight stability: Stable",
+            title=template["title"],
+            description=template["description"],
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+    elif overnight_result.stability_label in ("Moderate variation", "High variation"):
+        template = SUGGESTION_TEMPLATES["overnight_variable"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference=f"Overnight stability: {overnight_result.stability_label}",
+            title=template["title"],
+            description=template["description"],
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+
+    # Excursion suggestions
+    excursion_summary = overnight_result.excursion_summary
+    if excursion_summary.get("sustained_low_nights", 0) > 0:
+        template = SUGGESTION_TEMPLATES["overnight_low_excursions"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference="Overnight: sustained low periods detected",
+            title=template["title"],
+            description=template["description"],
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+    if excursion_summary.get("sustained_high_nights", 0) > 0:
+        template = SUGGESTION_TEMPLATES["overnight_high_excursions"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference="Overnight: sustained high periods detected",
+            title=template["title"],
+            description=template["description"],
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+
+    # Weekday/weekend difference (threshold: >10 mg/dL)
+    wd_avg = overnight_result.weekday_mean_glucose
+    we_avg = overnight_result.weekend_mean_glucose
+    if (
+        wd_avg is not None
+        and we_avg is not None
+        and abs(wd_avg - we_avg) > 10.0
+    ):
+        template = SUGGESTION_TEMPLATES["overnight_weekday_weekend_diff"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference=(
+                f"Overnight weekday/weekend diff: {wd_avg:.0f} vs {we_avg:.0f} mg/dL"
+            ),
+            title=template["title"],
+            description=template["description"].format(
+                weekday_avg=wd_avg,
+                weekend_avg=we_avg,
             ),
             action=template["action"],
             priority=template["priority"],

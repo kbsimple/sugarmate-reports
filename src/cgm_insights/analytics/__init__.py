@@ -20,6 +20,10 @@ from .behavioral_patterns import (
     BehavioralAnalysisResult,
     ConsistencyLabel,
 )
+from .overnight_patterns import (
+    analyze_overnight_patterns,
+    OvernightAnalysisResult,
+)
 
 __all__ = [
     # Metrics
@@ -39,4 +43,7 @@ __all__ = [
     "BehavioralPattern",
     "BehavioralAnalysisResult",
     "ConsistencyLabel",
+    # Overnight pattern analysis (Phase 5)
+    "analyze_overnight_patterns",
+    "OvernightAnalysisResult",
 ]
