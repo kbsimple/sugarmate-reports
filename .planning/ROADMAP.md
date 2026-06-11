@@ -22,7 +22,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 
 ### v2.0 (Current)
 
-- [ ] **Phase 4: Behavioral Pattern Analysis** - Users see time-bucketed patterns with cross-day consistency
+- [x] **Phase 4: Behavioral Pattern Analysis** - Users see time-bucketed patterns with cross-day consistency
 - [ ] **Phase 5: Sleep Analysis** - Users understand overnight glucose behavior
 - [ ] **Phase 6: Anomaly Detection** - Users identify unusual glucose deviations
 
@@ -114,10 +114,10 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 **Plans:** 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Core library: BehavioralPattern model, sliding-window algorithm, wellness suggestion templates
-- [ ] 04-02-PLAN.md — Public API wiring: analytics/__init__.py and cgm_insights/__init__.py exports
-- [ ] 04-03-PLAN.md — Web integration: session storage, upload pipeline, results route, behavioral_patterns.html tab component
-- [ ] 04-04-PLAN.md — CLI flag and test suite: --behavioral flag, Rich table renderer, test_behavioral_patterns.py
+- [x] 04-01-PLAN.md — Core library: BehavioralPattern model, sliding-window algorithm, wellness suggestion templates
+- [x] 04-02-PLAN.md — Public API wiring: analytics/__init__.py and cgm_insights/__init__.py exports
+- [x] 04-03-PLAN.md — Web integration: session storage, upload pipeline, results route, behavioral_patterns.html tab component
+- [x] 04-04-PLAN.md — CLI flag and test suite: --behavioral flag, Rich table renderer, test_behavioral_patterns.py
 
 ---
 
@@ -166,7 +166,7 @@ Plans:
 | 1. Core Analysis Library | 4/4 | Complete | 01-01, 01-02, 01-03, 01-04 |
 | 2. CLI Tool + Insights | 3/3 | Complete | 02-01, 02-02, 02-03 |
 | 3. Web Interface + Reports | 4/4 | Complete | 03-01, 03-02, 03-03, 03-04 |
-| 4. Behavioral Pattern Analysis | 0/4 | In progress | - |
+| 4. Behavioral Pattern Analysis | 4/4 | Complete | 04-01, 04-02, 04-03, 04-04 |
 | 5. Sleep Analysis | 0/0 | Not started | - |
 | 6. Anomaly Detection | 0/0 | Not started | - |
 
@@ -227,12 +227,12 @@ Plans:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BHVR-01 | Phase 4 | Planned (04-01, 04-02, 04-03, 04-04) |
-| BHVR-02 | Phase 4 | Planned (04-01, 04-03, 04-04) |
-| BHVR-03 | Phase 4 | Planned (04-01) |
-| BHVR-04 | Phase 4 | Planned (04-01) |
-| BHVR-05 | Phase 4 | Planned (04-01, 04-03, 04-04) |
-| BHVR-06 | Phase 4 | Planned (04-01, 04-03, 04-04) |
+| BHVR-01 | Phase 4 | Complete (04-01, 04-02, 04-03, 04-04) |
+| BHVR-02 | Phase 4 | Complete (04-01, 04-03, 04-04) |
+| BHVR-03 | Phase 4 | Complete (04-01) |
+| BHVR-04 | Phase 4 | Complete (04-01) |
+| BHVR-05 | Phase 4 | Complete (04-01, 04-03, 04-04) |
+| BHVR-06 | Phase 4 | Complete (04-01, 04-03, 04-04) |
 | SLEEP-01 | Phase 5 | Pending |
 | SLEEP-02 | Phase 5 | Pending |
 | SLEEP-03 | Phase 5 | Pending |
