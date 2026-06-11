@@ -41,6 +41,9 @@ async def get_results(request: Request, session_id: str):
     patterns = session_data.patterns
     raw_readings = session_data.raw_readings
 
+    # Extract behavioral patterns from session
+    behavioral_patterns_data = session_data.behavioral_patterns  # dict or None
+
     # Format results for display
     formatted = format_results(results)
 
@@ -97,6 +100,7 @@ async def get_results(request: Request, session_id: str):
             "suggestions": formatted_suggestions,
             "tir_data": tir_data,
             "glucose_readings": raw_readings,
+            "behavioral_patterns": behavioral_patterns_data,  # NEW
         }
     )
 
