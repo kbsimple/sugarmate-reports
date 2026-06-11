@@ -57,11 +57,11 @@ Pattern Analysis Release — anomaly detection, sleep analysis, behavioral patte
 
 ### Sleep Analysis
 
-- [ ] **SLEEP-01**: System analyzes glucose patterns during 10pm-6am window (labeled as "overnight" not "sleep")
-- [ ] **SLEEP-02**: System calculates overnight metrics: mean glucose, TIR, CV, time below range
-- [ ] **SLEEP-03**: System compares weekday vs weekend overnight patterns (differences in stability and control)
-- [ ] **SLEEP-04**: System calculates NGSI-style stability index (nocturnal glycemic stability) for overnight periods
-- [ ] **SLEEP-05**: System detects overnight excursions (sustained highs/lows during overnight window)
+- [x] **SLEEP-01**: System analyzes glucose patterns during 10pm-6am window (labeled as "overnight" not "sleep")
+- [x] **SLEEP-02**: System calculates overnight metrics: mean glucose, TIR, CV, time below range
+- [x] **SLEEP-03**: System compares weekday vs weekend overnight patterns (differences in stability and control)
+- [x] **SLEEP-04**: System calculates NGSI-style stability index (nocturnal glycemic stability) for overnight periods
+- [x] **SLEEP-05**: System detects overnight excursions (sustained highs/lows during overnight window)
 - [x] **SLEEP-06**: All sleep insights use wellness framing and acknowledge window assumption
 
 ### Behavioral Patterns
@@ -158,12 +158,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BHVR-04 | Phase 4 | Pending |
 | BHVR-05 | Phase 4 | Pending |
 | BHVR-06 | Phase 4 | Pending |
-| SLEEP-01 | Phase 5 | Pending |
-| SLEEP-02 | Phase 5 | Pending |
-| SLEEP-03 | Phase 5 | Pending |
-| SLEEP-04 | Phase 5 | Pending |
-| SLEEP-05 | Phase 5 | Pending |
-| SLEEP-06 | Phase 5 | Pending |
+| SLEEP-01 | Phase 5 | Complete |
+| SLEEP-02 | Phase 5 | Complete |
+| SLEEP-03 | Phase 5 | Complete |
+| SLEEP-04 | Phase 5 | Complete |
+| SLEEP-05 | Phase 5 | Complete |
+| SLEEP-06 | Phase 5 | Complete |
 | ANLY-02 | Phase 6 | Pending |
 | ANLY-03 | Phase 6 | Pending |
 | ANLY-04 | Phase 6 | Pending |

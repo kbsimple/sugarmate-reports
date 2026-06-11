@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
 status: in_progress
-last_updated: "2026-06-11T00:15:00Z"
+last_updated: "2026-06-11T20:25:45Z"
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 38
+  total_plans: 7
+  completed_plans: 7
+  percent: 54
 ---
 
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 5 in progress — Plan 05-02 complete
+**Status:** Phase 5 in progress — Plans 05-01, 05-02, 05-04 complete
 
 ---
 
@@ -32,9 +32,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | Phase 5: Sleep Analysis |
-| Plan | 02 (complete) |
+| Plan | 04 (complete) |
 | Status | In progress |
-| Progress | `██████░░░░░░` 46% (Plan 6/13 complete) |
+| Progress | `███████░░░░░` 54% (Plan 7/13 complete) |
 
 ---
 
@@ -143,13 +143,15 @@ progress:
 
 **Entry Point:** v2.0 roadmap created
 
-**Next Action:** Continue Phase 5 execution (Plans 05-03 through 05-04)
+**Next Action:** Continue Phase 5 execution (Plan 05-03 remaining)
 
 **Session (2026-06-11):** Phase 4 complete — 4 plans executed (sliding-window behavioral analysis, public API wiring, web integration, CLI flag + tests). 221 tests passing. 6 code review findings fixed (dead suggestion integration, midnight-bucket suggestion selection, min_days threading, /data endpoint, CLI warning gap, empty-string guard).
 
 **Session (2026-06-11):** Phase 5 Plan 01 complete — overnight_patterns.py created with OvernightAnalysisResult model, _get_overnight_df, _compute_metrics, _detect_excursions, and analyze_overnight_patterns. All 221 existing tests pass. Commit af09e2b.
 
 **Session (2026-06-11):** Phase 5 Plan 02 complete — overnight patterns wired into cgm_insights.analytics and cgm_insights public APIs; generate_overnight_suggestions() added with 5 wellness-language templates. All 221 tests pass. Commit 319d0ca.
+
+**Session (2026-06-11):** Phase 5 Plan 04 complete — --overnight/--no-overnight CLI flag added to analyze and download_and_analyze commands; _render_overnight_patterns() Rich table renderer added; 10-test overnight_patterns test suite created. 241 tests pass (221 + 10 new + 10 from 05-02). Commit a37ef4c.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
