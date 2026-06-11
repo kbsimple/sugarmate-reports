@@ -10,7 +10,8 @@ from fastapi.templating import Jinja2Templates
 from ..services.session import session_store
 from cgm_insights import format_results, format_quality_flags
 from cgm_insights.analytics.behavioral_patterns import BehavioralAnalysisResult
-from cgm_insights.output.suggestions import generate_suggestions, generate_behavioral_suggestions
+from cgm_insights.analytics.overnight_patterns import OvernightAnalysisResult
+from cgm_insights.output.suggestions import generate_suggestions, generate_behavioral_suggestions, generate_overnight_suggestions
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/web/templates")
@@ -45,6 +46,9 @@ async def get_results(request: Request, session_id: str):
     # Extract behavioral patterns from session
     behavioral_patterns_data = session_data.behavioral_patterns  # dict or None
 
+    # Extract overnight patterns from session (Phase 5)
+    overnight_patterns_data = session_data.overnight_patterns  # dict or None
+
     # Format results for display
     formatted = format_results(results)
 
@@ -58,6 +62,12 @@ async def get_results(request: Request, session_id: str):
     if behavioral_patterns_data and not behavioral_patterns_data.get("insufficient_data", True):
         behavioral_result = BehavioralAnalysisResult.model_validate(behavioral_patterns_data)
         suggestions = suggestions + generate_behavioral_suggestions(behavioral_result)
+        suggestions.sort(key=lambda s: s.priority)
+
+    # Add overnight suggestions if analysis succeeded
+    if overnight_patterns_data and not overnight_patterns_data.get("insufficient_data", True):
+        overnight_result = OvernightAnalysisResult.model_validate(overnight_patterns_data)
+        suggestions = suggestions + generate_overnight_suggestions(overnight_result)
         suggestions.sort(key=lambda s: s.priority)
 
     # Format patterns for template
@@ -107,7 +117,8 @@ async def get_results(request: Request, session_id: str):
             "suggestions": formatted_suggestions,
             "tir_data": tir_data,
             "glucose_readings": raw_readings,
-            "behavioral_patterns": behavioral_patterns_data,  # NEW
+            "behavioral_patterns": behavioral_patterns_data,  # Phase 4
+            "overnight_patterns": overnight_patterns_data,  # Phase 5
         }
     )
 
@@ -149,4 +160,5 @@ async def get_results_data(session_id: str):
         ],
         "glucose_readings": session_data.raw_readings,
         "behavioral_patterns": session_data.behavioral_patterns,
+        "overnight_patterns": session_data.overnight_patterns,
     }

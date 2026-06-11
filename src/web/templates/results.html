@@ -119,6 +119,13 @@
         {% endwith %}
     </div>
 
+    <!-- Overnight Patterns (Phase 5) -->
+    <div class="mb-6">
+        {% with overnight_patterns=overnight_patterns %}
+        {% include 'components/overnight_patterns.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Patterns and Suggestions -->
     <div class="mb-6">
         {% with patterns=patterns, suggestions=suggestions %}

@@ -1,0 +1,135 @@
+{# Overnight Patterns component.
+
+Parameters:
+  - overnight_patterns: dict from OvernightAnalysisResult.model_dump(), or None.
+    Keys: mean_glucose (float|null), tir_pct (float|null), cv (float|null),
+    tbr_pct (float|null), stability_score (float|null), stability_label (str|null),
+    weekday_mean_glucose (float|null), weekend_mean_glucose (float|null),
+    weekday_tir_pct (float|null), weekend_tir_pct (float|null),
+    excursion_summary (dict), nights_with_data (int), insufficient_data (bool),
+    window_label (str).
+#}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg font-bold">Overnight Patterns (10pm–6am)</h3>
+
+        {% if not overnight_patterns or overnight_patterns.insufficient_data %}
+        {# Insufficient data state #}
+        <div class="alert alert-info">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <h3 class="font-bold">Not enough overnight data</h3>
+                <p class="text-sm mt-1">Overnight analysis requires at least 5 nights of data in the 10pm–6am window. Upload a file covering more days to see overnight glucose patterns.</p>
+            </div>
+        </div>
+
+        {% else %}
+        <p class="text-sm text-base-content/60 mb-3">{{ overnight_patterns.nights_with_data }} nights analyzed · {{ overnight_patterns.window_label }} window</p>
+
+        {# Metrics row #}
+        <div class="stats stats-horizontal shadow w-full mb-4">
+            {% if overnight_patterns.mean_glucose is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Mean Glucose</div>
+                <div class="stat-value text-lg">{{ overnight_patterns.mean_glucose | round(0) | int }}</div>
+                <div class="stat-desc">mg/dL</div>
+            </div>
+            {% endif %}
+            {% if overnight_patterns.tir_pct is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Time in Range</div>
+                <div class="stat-value text-lg">{{ overnight_patterns.tir_pct | round(1) }}%</div>
+                <div class="stat-desc">70–180 mg/dL</div>
+            </div>
+            {% endif %}
+            {% if overnight_patterns.cv is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Variability (CV)</div>
+                <div class="stat-value text-lg">{{ overnight_patterns.cv | round(1) }}%</div>
+                <div class="stat-desc">night-to-night</div>
+            </div>
+            {% endif %}
+            {% if overnight_patterns.tbr_pct is not none %}
+            <div class="stat">
+                <div class="stat-title text-xs">Time Below Range</div>
+                <div class="stat-value text-lg">{{ overnight_patterns.tbr_pct | round(1) }}%</div>
+                <div class="stat-desc">&lt;70 mg/dL</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Overnight Stability Score #}
+        {% if overnight_patterns.stability_score is not none %}
+        <div class="mb-4">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm font-medium">Overnight Stability Score</span>
+                <span class="text-sm text-base-content/70">
+                    {{ (overnight_patterns.stability_score * 100) | round(0) | int }}% — {{ overnight_patterns.stability_label }}
+                </span>
+            </div>
+            {% if overnight_patterns.stability_label == "Stable" %}
+            <progress class="progress progress-success w-full" value="{{ (overnight_patterns.stability_score * 100) | round(0) | int }}" max="100"></progress>
+            {% elif overnight_patterns.stability_label == "Moderate variation" %}
+            <progress class="progress progress-warning w-full" value="{{ (overnight_patterns.stability_score * 100) | round(0) | int }}" max="100"></progress>
+            {% else %}
+            <progress class="progress progress-error w-full" value="{{ (overnight_patterns.stability_score * 100) | round(0) | int }}" max="100"></progress>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Weekday vs Weekend #}
+        {% if overnight_patterns.weekday_mean_glucose is not none and overnight_patterns.weekend_mean_glucose is not none %}
+        <div class="mb-4">
+            <h4 class="text-sm font-semibold mb-2">Weekday vs Weekend Overnight</h4>
+            <div class="flex gap-4">
+                <div class="bg-base-200 rounded-lg p-2 flex-1 text-center">
+                    <p class="text-xs text-base-content/60">Weekday nights</p>
+                    <p class="text-base font-medium">{{ overnight_patterns.weekday_mean_glucose | round(0) | int }} mg/dL</p>
+                    {% if overnight_patterns.weekday_tir_pct is not none %}
+                    <p class="text-xs text-base-content/50">TIR {{ overnight_patterns.weekday_tir_pct | round(1) }}%</p>
+                    {% endif %}
+                </div>
+                <div class="bg-base-200 rounded-lg p-2 flex-1 text-center">
+                    <p class="text-xs text-base-content/60">Weekend nights</p>
+                    <p class="text-base font-medium">{{ overnight_patterns.weekend_mean_glucose | round(0) | int }} mg/dL</p>
+                    {% if overnight_patterns.weekend_tir_pct is not none %}
+                    <p class="text-xs text-base-content/50">TIR {{ overnight_patterns.weekend_tir_pct | round(1) }}%</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Excursion summary #}
+        {% set exc = overnight_patterns.excursion_summary %}
+        {% if exc and exc.total_excursion_nights and exc.total_excursion_nights > 0 %}
+        <div class="mb-4">
+            <h4 class="text-sm font-semibold mb-2">Overnight Patterns of Note</h4>
+            {% if exc.sustained_low_nights and exc.sustained_low_nights > 0 %}
+            <div class="flex items-center gap-2 mb-1">
+                <span class="badge badge-error badge-sm">low</span>
+                <span class="text-sm">{{ exc.sustained_low_nights }} of {{ exc.total_nights }} nights had sustained low glucose periods</span>
+            </div>
+            {% endif %}
+            {% if exc.sustained_high_nights and exc.sustained_high_nights > 0 %}
+            <div class="flex items-center gap-2 mb-1">
+                <span class="badge badge-warning badge-sm">elevated</span>
+                <span class="text-sm">{{ exc.sustained_high_nights }} of {{ exc.total_nights }} nights had sustained elevated glucose periods</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% endif %}{# end if not insufficient_data #}
+
+        {# Wellness disclaimer — always shown #}
+        <div class="bg-base-200 rounded-lg p-2 mt-4">
+            <p class="text-xs text-base-content/60">
+                <strong>Wellness Information Only:</strong> This analysis uses the 10pm–6am window as a proxy for overnight periods. Actual overnight timing varies. This is not medical advice — always discuss glucose patterns with your healthcare provider.
+            </p>
+        </div>
+
+    </div>
+</div>
