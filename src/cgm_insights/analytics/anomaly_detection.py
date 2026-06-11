@@ -334,17 +334,16 @@ def _build_weekly_summaries(anomaly_df: pl.DataFrame) -> list[WeeklySummary]:
     if anomaly_df.height == 0:
         return []
 
-    # Add year and iso_week columns.
-    try:
-        anomaly_df = anomaly_df.with_columns([
-            pl.col("timestamp").dt.year().alias("year"),
-            pl.col("timestamp").dt.week().alias("iso_week"),
-        ])
-    except AttributeError:
-        anomaly_df = anomaly_df.with_columns([
-            pl.col("timestamp").dt.year().alias("year"),
-            pl.col("timestamp").dt.iso_week().alias("iso_week"),
-        ])
+    # Add iso_year and iso_week columns.
+    # dt.iso_year() must be paired with dt.week() (ISO week number) so that
+    # year-boundary dates (e.g. 2021-01-01 = ISO week 53 of 2020) are grouped
+    # into the correct week.  Using dt.year() (calendar year) here would cause
+    # dt.date.fromisocalendar(2021, 53, 1) to raise ValueError for years that
+    # only have 52 ISO weeks, crashing the entire upload response.
+    anomaly_df = anomaly_df.with_columns([
+        pl.col("timestamp").dt.iso_year().alias("year"),
+        pl.col("timestamp").dt.week().alias("iso_week"),
+    ])
 
     # Collect unique (year, iso_week) pairs sorted descending.
     week_pairs = (
