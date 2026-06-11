@@ -235,18 +235,23 @@ def _filter_pisa_artifacts(df: pl.DataFrame) -> tuple[pl.DataFrame, int]:
     return filtered_df, total_pisa
 
 
-def _compute_bucket_baselines(df: pl.DataFrame) -> pl.DataFrame:
+def _compute_bucket_baselines(
+    df: pl.DataFrame,
+    min_days: int = MIN_DAYS_FOR_BASELINE,
+) -> pl.DataFrame:
     """Compute per-(bucket, day_type) mean and std from historical data.
 
     Two-step aggregation to avoid inflated SD:
       Step 1: per-day bucket means  (group_by bucket_start, day_type, date)
       Step 2: baseline stats        (group_by bucket_start, day_type)
 
-    Only returns buckets with >= MIN_DAYS_FOR_BASELINE days AND non-null,
+    Only returns buckets with >= min_days days AND non-null,
     non-zero bucket_std (single-day buckets are dropped).
 
     Args:
         df: DataFrame from _build_df() with mod, date, day_type, glucose columns.
+        min_days: Minimum distinct days a bucket must have to be included in
+            the baseline.  Defaults to MIN_DAYS_FOR_BASELINE.
 
     Returns:
         DataFrame with columns: bucket_start (int), day_type (str),
@@ -266,7 +271,7 @@ def _compute_bucket_baselines(df: pl.DataFrame) -> pl.DataFrame:
             pl.col("daily_mean").std().alias("bucket_std"),
             pl.col("daily_mean").count().alias("days_with_data"),
         )
-        .filter(pl.col("days_with_data") >= MIN_DAYS_FOR_BASELINE)
+        .filter(pl.col("days_with_data") >= min_days)
         .filter(pl.col("bucket_std").is_not_null())
         .filter(pl.col("bucket_std") > 0.0)
     )
@@ -447,7 +452,7 @@ def analyze_anomalies(
     df_clean, pisa_count = _filter_pisa_artifacts(df)
 
     # Step 2: Compute baselines
-    baselines = _compute_bucket_baselines(df_clean)
+    baselines = _compute_bucket_baselines(df_clean, min_days=min_days)
 
     if baselines.height == 0:
         # No buckets with non-zero std (e.g. perfectly uniform data).
