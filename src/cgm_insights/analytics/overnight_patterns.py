@@ -19,6 +19,7 @@ from cgm_insights.models import CGMReading
 OVERNIGHT_START_MINUTE: int = 1320   # 22:00 = 22 * 60
 OVERNIGHT_WINDOW_MINUTES: int = 480  # 8 hours = 6:00 end
 MIN_NIGHTS_FOR_ANALYSIS: int = 5
+MIN_NIGHTS_FOR_SPLIT: int = 3         # minimum nights for weekday/weekend sub-analysis
 MIN_READINGS_PER_NIGHT_FOR_EXCURSION: int = 6
 EXCURSION_MIN_RUN: int = 3           # >=3 consecutive readings = >=15 min at 5-min sampling
 
@@ -133,6 +134,15 @@ def _compute_metrics(overnight_df: pl.DataFrame) -> dict:
         .filter(pl.col("count") >= 3)
     )
 
+    # Re-derive day_type from night_date to avoid non-deterministic .first() on mixed
+    # boundary nights (e.g. Fri 22:00 readings are "weekday"; Sat 01:00 are "weekend").
+    per_night = per_night.with_columns(
+        pl.when(pl.col("night_date").dt.weekday() >= 6)
+        .then(pl.lit("weekend"))
+        .otherwise(pl.lit("weekday"))
+        .alias("day_type")
+    )
+
     if per_night.height == 0:
         return {"nights_with_data": 0}
 
@@ -147,7 +157,10 @@ def _compute_metrics(overnight_df: pl.DataFrame) -> dict:
 
     # CV of daily overnight means (cross-night variability, NOT intra-night CV)
     std_g = per_night["daily_mean"].std()
-    cv = (std_g / mean_glucose * 100) if mean_glucose and mean_glucose > 0 else 0.0
+    if std_g is None or mean_glucose is None or mean_glucose <= 0:
+        cv = 0.0
+    else:
+        cv = std_g / mean_glucose * 100
 
     stability_score = max(0.0, 1.0 - (cv / 100.0))
     if stability_score >= 0.8:
@@ -165,7 +178,7 @@ def _compute_metrics(overnight_df: pl.DataFrame) -> dict:
         nights: pl.DataFrame,
     ) -> tuple[Optional[float], Optional[float]]:
         """Return (mean_glucose, tir_pct) for a day-type subset or (None, None)."""
-        if nights.height < MIN_NIGHTS_FOR_ANALYSIS:
+        if nights.height < MIN_NIGHTS_FOR_SPLIT:
             return None, None
         mean_g = nights["daily_mean"].mean()
         total = nights["count"].sum()
@@ -310,6 +323,14 @@ def analyze_overnight_patterns(
         )
 
     metrics = _compute_metrics(overnight_df)
+
+    # Re-check after per-night reading filter: some raw nights may have been filtered out.
+    if metrics.get("nights_with_data", 0) < min_nights:
+        return OvernightAnalysisResult(
+            nights_with_data=metrics.get("nights_with_data", 0),
+            insufficient_data=True,
+        )
+
     excursions = _detect_excursions(overnight_df)
 
     return OvernightAnalysisResult(
