@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
 status: in_progress
-last_updated: "2026-06-11T22:30:00Z"
+last_updated: "2026-06-11T23:00:00Z"
 progress:
   total_phases: 3
   completed_phases: 2
@@ -15,7 +15,7 @@ progress:
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 6 in progress — Plans 06-01, 06-02, 06-04 complete
+**Status:** Phase 6 complete — All 4 plans (06-01, 06-02, 06-03, 06-04) complete
 
 ---
 
@@ -32,9 +32,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | Phase 6: Anomaly Detection |
-| Plan | 06-04 complete |
-| Status | In progress |
-| Progress | `████████░░░░` 67% (2/3 phases, 3/4 plans in Phase 6) |
+| Plan | 06-03 complete (all 4 plans done) |
+| Status | Complete |
+| Progress | `████████████` 100% (3/3 v2.0 phases, 4/4 plans in Phase 6) |
 
 ---
 
@@ -56,7 +56,7 @@ progress:
 |-------|--------|-------|
 | 4. Behavioral Pattern Analysis | Complete | 4/4 |
 | 5. Sleep Analysis | Complete | 4/4 |
-| 6. Anomaly Detection | In progress | 3/4 |
+| 6. Anomaly Detection | Complete | 4/4 |
 
 **Scope:** 17 requirements across 3 phases
 
@@ -163,6 +163,8 @@ progress:
 **Session (2026-06-11):** Phase 6 Plan 02 complete — analyze_anomalies and AnomalyDetectionResult wired into analytics/__init__ and cgm_insights/__init__ public APIs; generate_anomaly_suggestions() added with 3 severity-tiered wellness-language templates. At-most-one-suggestion design selects highest severity tier. All 231 tests pass. Commit 8dfa4e0.
 
 **Session (2026-06-11):** Phase 6 Plan 04 complete — --anomaly/--no-anomaly CLI flag added to analyze and download_and_analyze commands; _render_anomaly_detection() Rich table renderer added; 9-test anomaly_detection test suite created. Rule 1 fix: baselines.height==0 with sufficient days now returns insufficient_data=False. 240 tests pass. Commit e5febf8.
+
+**Session (2026-06-11):** Phase 6 Plan 03 complete — anomaly detection wired into web layer: SessionData field, upload.py call, results.py extraction + suggestion merge, /data JSON endpoint, results.html include, anomaly_detection.html DaisyUI component. 240 tests pass. No forbidden wellness terms in user-facing output. Commit be62810. Phase 6 now fully complete (4/4 plans).
 
 ---
 *This file tracks current position and context. Update after each phase transition.*

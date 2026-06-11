@@ -49,11 +49,11 @@ Pattern Analysis Release — anomaly detection, sleep analysis, behavioral patte
 
 ### Anomaly Detection
 
-- [ ] **ANLY-02**: System detects statistical outliers from user's personal baseline (glucose values >2 SD from time-of-day/day-of-week pattern)
-- [ ] **ANLY-03**: System filters PISA artifacts (pressure-induced sensor attenuation) before anomaly detection to prevent false positives
-- [ ] **ANLY-04**: System classifies anomalies by severity (mild, moderate, severe) based on deviation magnitude and duration
-- [ ] **ANLY-05**: System provides weekly anomaly summaries (aggregate counts, patterns, time distribution) to avoid alert fatigue
-- [ ] **ANLY-06**: All anomaly insights use wellness language ("unusual pattern" not "abnormal", "consider discussing" not "diagnosis")
+- [x] **ANLY-02**: System detects statistical outliers from user's personal baseline (glucose values >2 SD from time-of-day/day-of-week pattern)
+- [x] **ANLY-03**: System filters PISA artifacts (pressure-induced sensor attenuation) before anomaly detection to prevent false positives
+- [x] **ANLY-04**: System classifies anomalies by severity (mild, moderate, severe) based on deviation magnitude and duration
+- [x] **ANLY-05**: System provides weekly anomaly summaries (aggregate counts, patterns, time distribution) to avoid alert fatigue
+- [x] **ANLY-06**: All anomaly insights use wellness language ("unusual pattern" not "abnormal", "consider discussing" not "diagnosis")
 
 ### Sleep Analysis
 
