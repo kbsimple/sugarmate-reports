@@ -15,7 +15,7 @@ progress:
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 5 in progress — Plan 05-01 complete
+**Status:** Phase 5 in progress — Plan 05-02 complete
 
 ---
 
@@ -32,9 +32,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | Phase 5: Sleep Analysis |
-| Plan | 01 (complete) |
+| Plan | 02 (complete) |
 | Status | In progress |
-| Progress | `█████░░░░░░░` 38% (Plan 5/13 complete) |
+| Progress | `██████░░░░░░` 46% (Plan 6/13 complete) |
 
 ---
 
@@ -143,11 +143,13 @@ progress:
 
 **Entry Point:** v2.0 roadmap created
 
-**Next Action:** Continue Phase 5 execution (Plans 05-02 through 05-04)
+**Next Action:** Continue Phase 5 execution (Plans 05-03 through 05-04)
 
 **Session (2026-06-11):** Phase 4 complete — 4 plans executed (sliding-window behavioral analysis, public API wiring, web integration, CLI flag + tests). 221 tests passing. 6 code review findings fixed (dead suggestion integration, midnight-bucket suggestion selection, min_days threading, /data endpoint, CLI warning gap, empty-string guard).
 
 **Session (2026-06-11):** Phase 5 Plan 01 complete — overnight_patterns.py created with OvernightAnalysisResult model, _get_overnight_df, _compute_metrics, _detect_excursions, and analyze_overnight_patterns. All 221 existing tests pass. Commit af09e2b.
+
+**Session (2026-06-11):** Phase 5 Plan 02 complete — overnight patterns wired into cgm_insights.analytics and cgm_insights public APIs; generate_overnight_suggestions() added with 5 wellness-language templates. All 221 tests pass. Commit 319d0ca.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*

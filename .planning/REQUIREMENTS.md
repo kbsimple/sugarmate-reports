@@ -62,7 +62,7 @@ Pattern Analysis Release — anomaly detection, sleep analysis, behavioral patte
 - [ ] **SLEEP-03**: System compares weekday vs weekend overnight patterns (differences in stability and control)
 - [ ] **SLEEP-04**: System calculates NGSI-style stability index (nocturnal glycemic stability) for overnight periods
 - [ ] **SLEEP-05**: System detects overnight excursions (sustained highs/lows during overnight window)
-- [ ] **SLEEP-06**: All sleep insights use wellness framing and acknowledge window assumption
+- [x] **SLEEP-06**: All sleep insights use wellness framing and acknowledge window assumption
 
 ### Behavioral Patterns
 
@@ -152,30 +152,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ANLY-02 | — | Pending |
-| ANLY-03 | — | Pending |
-| ANLY-04 | — | Pending |
-| ANLY-05 | — | Pending |
-| ANLY-06 | — | Pending |
-| SLEEP-01 | — | Pending |
-| SLEEP-02 | — | Pending |
-| SLEEP-03 | — | Pending |
-| SLEEP-04 | — | Pending |
-| SLEEP-05 | — | Pending |
-| SLEEP-06 | — | Pending |
-| BHVR-01 | — | Pending |
-| BHVR-02 | — | Pending |
-| BHVR-03 | — | Pending |
-| BHVR-04 | — | Pending |
-| BHVR-05 | — | Pending |
-| BHVR-06 | — | Pending |
+| BHVR-01 | Phase 4 | Pending |
+| BHVR-02 | Phase 4 | Pending |
+| BHVR-03 | Phase 4 | Pending |
+| BHVR-04 | Phase 4 | Pending |
+| BHVR-05 | Phase 4 | Pending |
+| BHVR-06 | Phase 4 | Pending |
+| SLEEP-01 | Phase 5 | Pending |
+| SLEEP-02 | Phase 5 | Pending |
+| SLEEP-03 | Phase 5 | Pending |
+| SLEEP-04 | Phase 5 | Pending |
+| SLEEP-05 | Phase 5 | Pending |
+| SLEEP-06 | Phase 5 | Pending |
+| ANLY-02 | Phase 6 | Pending |
+| ANLY-03 | Phase 6 | Pending |
+| ANLY-04 | Phase 6 | Pending |
+| ANLY-05 | Phase 6 | Pending |
+| ANLY-06 | Phase 6 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 
 *Requirements defined: 2026-04-24 (v1.0), 2026-06-10 (v2.0)*
-*Last updated: 2026-06-10 after v2.0 requirements definition*
+*Last updated: 2026-06-10 after v2.0 roadmap creation*
