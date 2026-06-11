@@ -276,15 +276,13 @@ def _detect_excursions(overnight_df: pl.DataFrame) -> dict:
         glucose_values = sorted_rows["glucose"].to_list()
 
         has_low = _has_sustained_run(glucose_values, 70, above=False)
-        has_very_low = _has_sustained_run(glucose_values, 54, above=False)
         has_high = _has_sustained_run(glucose_values, 180, above=True)
 
-        night_has_low = has_low or has_very_low
-        if night_has_low:
+        if has_low:
             sustained_low_nights += 1
         if has_high:
             sustained_high_nights += 1
-        if night_has_low or has_high:
+        if has_low or has_high:
             total_excursion_nights += 1
 
     return {
