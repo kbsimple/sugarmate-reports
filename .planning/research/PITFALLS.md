@@ -1,363 +1,479 @@
-# Domain Pitfalls: CGM Analytics Application
+# Pitfalls Research
 
-**Domain:** Continuous Glucose Monitor (CGM) Data Analysis Application
-**Researched:** 2026-04-23
-**Confidence:** HIGH
+**Domain:** CGM Analytics - Anomaly Detection, Sleep Analysis, Behavioral Pattern Analysis
+**Researched:** 2026-06-10
+**Confidence:** HIGH (peer-reviewed research + existing codebase analysis)
+
+---
+
+## Executive Summary
+
+This research covers pitfalls specific to adding **anomaly detection (ANLY-02)**, **sleep analysis (ANLY-03)**, and **behavioral pattern analysis** to an existing CGM analytics system. The foundational pitfalls (regulatory boundaries, data quality, CGM lag) remain critical but are documented separately. This document focuses on **integration-specific pitfalls** for v2.0 features.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, legal liability, or major user harm.
+Mistakes that cause rewrites, incorrect insights, or regulatory issues.
 
-### Pitfall 1: Crossing the Medical Device Regulatory Boundary
+### Pitfall 1: Pressure-Induced Sensor Attenuation (PISA) Misinterpreted as Anomaly
 
-**What goes wrong:** The app makes claims or provides functionality that crosses from "general wellness" into regulated medical device territory, triggering FDA oversight requirements.
+**What goes wrong:**
+Anomaly detection flags false lows during sleep as "unusual glucose events" when they're actually sensor artifacts from sleeping on the CGM sensor. Users see "anomalies" that don't represent real glucose patterns.
 
-**Why it happens:** Developers inadvertently use disease-specific language ("diabetes management," "hypoglycemia detection"), provide treatment guidance, or set clinical thresholds (70-180 mg/dL) as diagnostic indicators rather than informational ranges.
+**Why it happens:**
+- PISA affects ~3% of overnight CGM readings (Baysal et al., 2014)
+- When sleeping on the sensor side, 32.4% of readings show excursions >25 mg/dL (Mensh et al., 2013)
+- Effects persist 30-90 minutes after position change
+- PISA causes false low readings (glucose-oxidase reaction affected by reduced blood flow and oxygen tension)
+- Without meal/activity/sleep data, there's no way to know if a low reading is real or artifact
 
 **Consequences:**
-- FDA enforcement action requiring app removal or modification
-- Legal liability if users make medical decisions based on app recommendations
-- Required premarket approval (510(k) or PMA) if classified as medical device
+- Users receive incorrect "anomaly" alerts for non-existent events
+- Trust in anomaly detection erodes after repeated false positives
+- Overnight pattern analysis corrupted by artifact data
+- Inappropriate wellness suggestions based on sensor errors
+
+**Prevention:**
+1. Implement PISA detection algorithm checking for:
+   - Sudden glucose drops exceeding physiological rate-of-change (>2 mg/dL/min sustained)
+   - Recovery pattern after artifact resolves
+   - Timing correlation with likely sleep periods (10pm-6am)
+2. Label detected PISA events separately from behavioral anomalies
+3. Use wellness language: "sensor readings during sleep may include artifacts from sleeping position"
+4. Exclude likely PISA periods from pattern calculations
+
+**Detection:**
+- Overnight "anomalies" that cluster around expected sleep times
+- Rate of change >2 mg/dL/min downward followed by rapid recovery
+- Users reporting "impossible" low glucose values overnight
+- Anomaly detection showing higher false positive rates overnight
+
+**Phase to address:** ANLY-02 (Anomaly Detection)
+
+---
+
+### Pitfall 2: Fixed Sleep Window (10pm-6am) Misidentifies Actual Sleep
+
+**What goes wrong:**
+Analysis assumes all readings between 10pm-6am are "sleep" when actual sleep times vary dramatically. Night shift workers, early risers, and irregular sleepers have their daytime glucose patterns misclassified as "overnight."
+
+**Why it happens:**
+- Fixed 10pm-6am window is a convenience assumption, not validated against actual sleep
+- Sleep onset can range from 9pm to 2am+ across populations
+- Wake times range from 4am to 9am+
+- ~20-30% of adults have irregular sleep schedules
+- No actigraphy or self-reported sleep times available
+
+**Consequences:**
+- "Sleep" analysis shows high variability (should be lower during actual sleep)
+- Multiple meals/activity patterns appearing in "overnight" data
+- Users questioning why their 11pm snack shows up in "sleep" analysis
+- Cross-day consistency poor for "sleep" patterns
+
+**Prevention:**
+1. Label findings clearly: "10pm-6am window" NOT "overnight" or "sleep"
+2. Consider alternative sleep inference methods:
+   - Lowest glucose variability periods (stable glucose suggests sleep)
+   - Rate-of-change analysis (glucose changes slow during sleep)
+   - Multi-day baseline comparison (consistency suggests pattern)
+3. Flag results when sleep window assumption likely violated:
+   - High variability in presumed sleep period
+   - Glucose patterns inconsistent with typical sleep behavior
+4. Provide user configuration for custom sleep windows
+
+**Detection:**
+- "Sleep" analysis showing CV >30% (unusual for actual sleep)
+- Users reporting that "sleep" patterns don't match their actual sleep times
+- Cross-day consistency metrics poor for "overnight" period
+
+**Phase to address:** ANLY-03 (Sleep Analysis)
+
+---
+
+### Pitfall 3: Anomaly Detection Thresholds Not Personalized
+
+**What goes wrong:**
+Anomaly detection generates too many false positives for high-variability users, or misses real anomalies for stable users. One-size-fits-all thresholds fail across diverse glucose patterns.
+
+**Why it happens:**
+- Physiological glucose rate of change varies: 75% of time <1 mg/dL/min, but ~8% >2 mg/dL/min
+- Aggressive settings: 88% detection rate but 7% false positive rate
+- Cautious settings: 64% detection rate but 1.7% false positive rate
+- No single threshold works for all users (personalization needed)
+- What's "anomalous" for one person may be normal for another
+
+**Consequences:**
+- Users with higher baseline variability get excessive flags
+- Stable users miss meaningful anomalies
+- Alert fatigue from false positives
+- Erosion of trust in anomaly detection
+
+**Prevention:**
+1. Use multi-tier anomaly classification:
+   - Tier 1 (Physiologically implausible): Rate >5 mg/dL/min — very likely artifact
+   - Tier 2 (Unusual for user): >2 std dev from user's personal baseline
+   - Tier 3 (Outside established pattern): Time-of-day deviation >20% from pattern
+2. Require minimum occurrences before flagging:
+   - Single occurrence: "notable"
+   - 2+ occurrences: "pattern deviation"
+   - 5+ occurrences: "anomaly"
+3. Separate artifact detection from behavioral anomalies
+4. Use wellness language: "unusual reading" not "anomaly" or "abnormal"
+
+**Detection:**
+- Users ignoring or disabling alerts
+- High proportion of flagged anomalies that user dismisses
+- False positives concentrated in specific time periods
+- Users with higher baseline variability getting more flags
+
+**Phase to address:** ANLY-02 (Anomaly Detection)
+
+---
+
+### Pitfall 4: Wellness Language Accidentally Crosses Medical Device Line
+
+**What goes wrong:**
+Feature descriptions or output language inadvertently triggers FDA medical device classification, requiring regulatory compliance.
+
+**Why it happens:**
+- "Anomaly detection" sounds like disease screening
+- "Sleep analysis" implies clinical diagnosis of sleep disorders
+- Presenting data as percentages and thresholds looks clinical
+- Users naturally interpret pattern findings as health recommendations
+- Disclaimers like "not medical advice" don't protect — FDA looks at actual behavior
+
+**Consequences:**
+- FDA enforcement action requiring app modification or removal
+- Legal liability if users make medical decisions based on app output
+- Required premarket approval (510(k) or PMA)
 - Potential criminal penalties for unauthorized medical device distribution
 
 **Prevention:**
-- Use wellness-focused language: "glucose patterns," "insights," not "diabetes management"
-- Never provide treatment recommendations (insulin doses, medication timing)
-- Display ranges as informational, not diagnostic thresholds
-- Include clear disclaimer: "Not a medical device. For informational purposes only. Not intended for diagnosis or treatment."
-- Avoid clinical alerts that recommend specific medical actions
-- Do NOT market to diabetics for disease management if seeking wellness classification
+Use wellness-framed language throughout:
+
+| Avoid | Use Instead |
+|-------|-------------|
+| "Anomaly detected" | "Unusual pattern observed" |
+| "Sleep analysis" | "10pm-6am window analysis" |
+| "Abnormal glucose" | "Glucose outside your typical range" |
+| "Risk assessment" | "Pattern summary" |
+| "Diagnose" | "Identify patterns" |
+| "Predict" | "Observe trends" |
+| "Should" | "Consider" |
+| "Medical condition" | "Health pattern" |
+
+**Additional safeguards:**
+1. Frame as observations, not diagnoses:
+   - "Your glucose at noon tends to be 15% higher than your average"
+   - NOT: "You have post-meal hyperglycemia"
+2. Keep recommendations lifestyle-focused:
+   - "Consider discussing patterns with your healthcare team"
+   - NOT: "Reduce carbohydrate intake at breakfast"
+3. Avoid clinical thresholds in recommendations
+4. Present data, don't tell user what to do about it
 
 **Detection:**
-- Audit all UI copy for disease-specific claims
-- Review feature specifications against FDA guidance criteria
-- Legal review of marketing materials before launch
+- Language audit for disease-specific claims
+- Review all user-facing text for medical framing
+- Legal review of feature descriptions
 
-**Phase to address:** Foundation (must be embedded from day one - retrofitting is painful)
+**Phase to address:** All phases (ongoing review)
 
 ---
 
-### Pitfall 2: Treating CGM Data as Accurate Blood Glucose
+### Pitfall 5: Sliding Window Computational Complexity Explodes
 
-**What goes wrong:** The app treats CGM readings as equivalent to blood glucose measurements, ignoring the 5-25 minute physiological lag between interstitial fluid and blood glucose, leading to misleading insights.
+**What goes wrong:**
+Computing 30/60/120 minute windows starting every 5 minutes for all 288 daily readings creates massive data volume and slow performance. For 14 days: 288 windows/day x 3 window sizes x 14 days = 12,096 window calculations per metric.
 
-**Why it happens:** Developers assume sensor data is "ground truth" without understanding that CGMs measure interstitial fluid glucose, not blood glucose. The lag varies by individual and glucose rate of change.
-
-**Consequences:**
-- Incorrect pattern identification (meal peaks appear later than actual consumption)
-- Misleading correlation analysis (exercise effects misaligned)
-- User confusion when CGM readings don't match fingerstick tests
-- Erosion of trust in app insights
-
-**Prevention:**
-- Document and communicate the physiological lag in app education
-- Consider rate-of-change when detecting patterns (rising/falling glucose affects lag)
-- Never recommend insulin timing based on CGM alone
-- Display trend arrows prominently when showing current values
-- Use time-alignment techniques when correlating with user-logged events
-
-**Detection:**
-- User reports of "inaccurate" insights that match symptoms
-- Pattern timing that doesn't align with logged meals/activities
-- Correlation tests against fingerstick data (if available)
-
-**Phase to address:** Analysis Engine (core to pattern detection algorithms)
-
----
-
-### Pitfall 3: Ignoring Data Quality Issues (Gaps, Artifacts, Compression Lows)
-
-**What goes wrong:** The app calculates metrics and detects patterns on incomplete or corrupted data without flagging quality issues, producing unreliable results.
-
-**Why it happens:** CGM data naturally contains gaps (sensor disconnection, signal loss), artifacts (duplicate timestamps, parallel profiles), and false readings (compression lows from sleeping on sensor, medication interference). Raw data is rarely clean.
-
-**Specific data quality issues:**
-
-| Issue | Cause | Effect |
-|-------|-------|--------|
-| Data gaps | Sensor disconnection, signal loss | Affects variability metrics (CONGA, MAGE), TIR accuracy |
-| Compression lows | Sleeping on sensor (pressure reduces blood flow) | False hypoglycemia readings during sleep |
-| Sensor drift | First 24-48 hours after insertion | 10-15% accuracy degradation |
-| End-of-life decay | Days 10-14 of sensor wear | Declining accuracy |
-| Acetaminophen interference | Tylenol and similar medications | False elevated readings |
-| Duplication errors | Multiple device uploads, EHR integration | 25.9% of profiles affected in studies |
+**Why it happens:**
+- Naive sliding window: O(n * W) where n = readings, W = window size
+- 5-minute intervals with overlapping windows means almost complete data overlap
+- Each reading is part of multiple windows simultaneously
+- Computing each window independently wastes computation
 
 **Consequences:**
-- Time Below Range dramatically overstated due to compression lows
-- Pattern detection based on artifacts, not real physiology
-- Users receive suggestions based on corrupted data
-- 14-day TIR calculations invalid if <80% data completeness
+- Analysis taking >1 second for typical dataset
+- Memory usage growing linearly with data size
+- Performance degrading exponentially with window count
+- Users experiencing lag when viewing results
 
 **Prevention:**
-- Require minimum 80% data completeness for reliable metrics
-- Detect and flag compression lows (rapid drops during typical sleep hours)
-- Identify sensor warm-up period (first 24-48 hours) and exclude or weight lower
-- Detect duplicate timestamps and parallel profiles before analysis
-- Check for physiological plausibility (glucose changes >5 mg/dL/min are suspect)
-- Display data quality indicators alongside insights
+1. Use incremental window algorithms:
+   - Sum: Add new reading, subtract evicted reading — O(1) per window
+   - Average: Maintain running sum and count — O(1) per window
+   - Standard deviation: Maintain running sum, sum of squares, count — O(1) per window
+
+2. Implement ring buffer for sliding windows:
+   ```python
+   class IncrementalWindow:
+       def __init__(self, size_minutes: int, interval_minutes: int = 5):
+           self.size = size_minutes // interval_minutes
+           self.buffer = [0.0] * self.size
+           self.sum = 0.0
+           self.count = 0
+           self.position = 0
+
+       def add(self, value: float):
+           evicted = self.buffer[self.position]
+           self.sum = self.sum - evicted + value
+           self.buffer[self.position] = value
+           self.position = (self.position + 1) % self.size
+           self.count = min(self.count + 1, self.size)
+           return self.sum / self.count if self.count > 0 else 0
+   ```
+
+3. Compute windows only when needed (lazy evaluation)
+4. For anomaly detection: compute baseline once per time period, compare individual readings
 
 **Detection:**
-- Calculate data completeness percentage before generating insights
-- Flag suspicious patterns (overnight lows without symptoms, rapid spikes/drops)
-- Cross-reference with sensor metadata (wear time, signal quality if available)
+- Performance tests with max dataset size (14+ days)
+- Memory profiling for sliding window operations
+- Timing analysis showing O(n) not O(n*W)
 
-**Phase to address:** Data Import & Validation (must be caught before analysis)
-
----
-
-### Pitfall 4: Over-Promising Actionability Without Context
-
-**What goes wrong:** The app presents "insights" that are actually just data observations without actionable context, leading to user frustration and disengagement.
-
-**Why it happens:** Developers confuse "showing patterns" with "providing actionable insights." A spike at 2pm is data; knowing it correlates with lunch and stress is insight; knowing what to change is actionability.
-
-**Consequences:**
-- Users see the data but don't know what to do with it
-- "So what?" response to insights
-- App abandonment after initial curiosity wears off
-- Negative reviews citing lack of value
-
-**Prevention:**
-- Distinguish three levels: Data (what) -> Pattern (when) -> Insight (why) -> Action (what to do)
-- Never present a pattern without at least one hypothesis for cause
-- Require user context (meals, activity, stress) for personalized suggestions
-- Use "consider" language rather than prescriptive recommendations
-- Provide educational content explaining why patterns matter
-- Offer specific experiments users can try ("test eating this food with more protein")
-
-**Detection:**
-- User feedback surveys asking "did you know what to do after seeing this?"
-- Engagement metrics on insight cards vs. raw data views
-- Support requests asking "what does this mean?"
-
-**Phase to address:** Insight Generation (core value proposition - must be designed in)
+**Phase to address:** Behavioral Pattern Analysis (sliding windows)
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall 5: Alert Fatigue and Notification Overload
+### Pitfall 6: Cross-Day Pattern Consistency Overstated
 
-**What goes wrong:** The app generates too many alerts or notifications, causing users to ignore or disable them entirely, including potentially valuable insights.
+**What goes wrong:**
+Analysis assumes patterns are consistent across days when research shows significant variability. Users receive misleading "consistent pattern" insights.
 
-**Why it happens:** Each pattern or anomaly seems important to developers, but users quickly become overwhelmed. Research shows alarm fatigue is linked to worse glucose control and diabetes distress.
+**Why it happens:**
+- ICC (intraclass correlation coefficient) for glucose reproducibility: 0.30-0.46 (poor to fair)
+- Day-of-week patterns vary significantly: Sunday highest glucose, Wednesday lowest
+- Seasonal variations: November-February worst control, April-August best
+- Holidays show 5-8% decreases in time-in-range
+- Weekend behavior differs from weekday (2-hour delay in glucose control window)
 
 **Consequences:**
-- Users disable notifications entirely
-- Important insights missed
-- User frustration and potential abandonment
-- Mental health impact from constant monitoring pressure
+- Pattern insights that don't match user's actual experience
+- Inconsistent recommendations week-to-week
+- User confusion when "pattern" doesn't hold
 
 **Prevention:**
-- Prioritize: Only alert on patterns that warrant action
-- Batch insights: Weekly digest rather than daily notifications
-- User control: Let users set notification preferences and thresholds
-- Smart timing: Don't send insights at inconvenient times
-- Quiet modes: Allow users to pause non-critical notifications
-- Focus on 2-3 key insights per session, not everything
+1. Separate weekday vs weekend analysis
+2. Include confidence intervals on patterns
+3. Require minimum occurrences (3+ days) before reporting pattern
+4. Flag patterns with high variability
+5. Label seasonal context when applicable
 
 **Detection:**
-- Track notification dismissal rates
-- Monitor notification opt-out rates
-- User feedback on notification volume
+- Pattern confidence intervals overlapping significantly
+- User reports that patterns "don't hold"
+- Week-to-week pattern variability >20%
 
-**Phase to address:** Frontend & UX (design notification system thoughtfully)
+**Phase to address:** Behavioral Pattern Analysis
 
 ---
 
-### Pitfall 6: Presenting Single Metrics Without Context
+### Pitfall 7: Missing PISA Artifacts in Pattern Calculations
 
-**What goes wrong:** The app displays Time in Range, average glucose, or other metrics in isolation, without the context needed for interpretation.
+**What goes wrong:**
+Pattern detection includes PISA artifacts as legitimate data, corrupting time-of-day and overnight patterns.
 
-**Why it happens:** Developers focus on individual metrics without understanding that TIR interpretation requires glycemic variability (CV), and both must be considered together. A 70% TIR means something different at 25% CV vs 40% CV.
-
-**Consequences:**
-- Users misinterpret their glucose control
-- False sense of security or unnecessary worry
-- Misleading comparisons between time periods
-
-**Key metric relationships:**
-- TIR + CV together indicate control quality
-- Same TIR with higher CV = worse outcomes
-- GMI (Glucose Management Indicator) estimates A1C from CGM
-- Time Below Range is critical for hypoglycemia risk (target <4%)
-
-**Prevention:**
-- Always show related metrics together (TIR, CV, GMI, TBR)
-- Provide reference ranges and what they mean
-- Explain how metrics relate to each other
-- Show trends over time, not just current values
-
-**Detection:**
-- User confusion about what "good" looks like
-- Questions about why TIR improved but control feels worse
-
-**Phase to address:** Analysis Engine (metric calculation and presentation)
-
----
-
-### Pitfall 7: Insufficient Data Period for Pattern Detection
-
-**What goes wrong:** The app attempts to identify patterns from too few days of data, producing unreliable or misleading results.
-
-**Why it happens:** Users upload partial data or the app eagerly generates insights before sufficient data is collected.
+**Why it happens:**
+- PISA artifacts look like real low glucose readings
+- No explicit PISA detection before pattern analysis
+- Artifacts concentrated in overnight hours (sleeping on sensor)
+- Existing codebase does not filter PISA events
 
 **Consequences:**
-- Day-of-week patterns from 3 days are meaningless
-- Meal patterns from 2 instances are coincidental
-- Users receive unreliable suggestions
-- Wasted development effort on premature analysis
-
-**Minimum data requirements:**
-- 14+ days for reliable pattern identification
-- 70-80% data completeness for accurate TIR
-- Multiple instances for meal or activity correlations
-- Full week minimum for day-of-week analysis
+- "Morning glucose tends to be lower" when actually PISA artifacts
+- False overnight hypoglycemia patterns
+- Incorrect recommendations based on artifact data
 
 **Prevention:**
-- Display "insufficient data" message until thresholds met
-- Show data collection progress toward analysis-ready state
-- Indicate confidence level based on data quantity
-- Prioritize basic metrics (average, ranges) over complex patterns for small datasets
+1. Run PISA detection before pattern analysis
+2. Exclude flagged PISA periods from aggregations
+3. Mark pattern confidence lower when potential artifacts detected
+4. Include PISA flag in data quality assessment
 
 **Detection:**
-- Data quantity checks before pattern analysis
-- Variance in patterns between consecutive periods (instability = unreliable)
+- Overnight patterns showing unexpectedly low glucose
+- Time-of-day patterns that don't match user's reported experience
+- Pattern detection in existing codebase: verify artifact handling
 
-**Phase to address:** Data Import & Validation (validate before analysis)
-
----
-
-### Pitfall 8: Performance Degradation with Large Datasets
-
-**What goes wrong:** Analysis becomes slow or unresponsive when processing typical CGM data volumes (288 readings/day = 8,640/month = 100,000+/year).
-
-**Why it happens:** Naive implementations using pure Python loops or unoptimized data structures cannot handle time-series operations on millions of points.
-
-**Consequences:**
-- Poor user experience (long waits for results)
-- Browser/server timeouts
-- Users give up on analysis
-
-**Prevention:**
-- Use vectorized operations (NumPy, Pandas)
-- Consider C++ extensions for critical paths (PyO3, Cython)
-- Implement streaming/chunked processing for large files
-- Cache intermediate results
-- Use efficient data structures (avoid repeated DataFrame copies)
-- Consider specialized libraries: GlucoStats (Python), cgmguru (R via reticulate)
-
-**Detection:**
-- Performance testing with realistic data volumes
-- Load testing with multi-month uploads
-- Memory profiling for large datasets
-
-**Phase to address:** Analysis Engine (architecture decision from start)
+**Phase to address:** ANLY-02 (Anomaly Detection) + ANLY-03 (Sleep Analysis)
 
 ---
 
 ## Minor Pitfalls
 
-### Pitfall 9: Confusing Food Demonization with Pattern Recognition
+### Pitfall 8: Confusing Artifact Detection with Anomaly Detection
 
-**What goes wrong:** The app suggests certain foods are "bad" based on glucose spikes, ignoring context (portion size, meal composition, activity, stress).
+**What goes wrong:**
+Development treats PISA/artifact detection as the same problem as behavioral anomaly detection, leading to incorrect algorithm selection.
 
-**Why it happens:** Simplistic pattern matching without considering confounding factors.
+**Why it happens:**
+- Both involve identifying "unusual" readings
+- Artifact detection: sensor errors, physiological implausibility
+- Anomaly detection: behavioral outliers outside user's normal patterns
+- Different algorithms optimal for each
 
 **Consequences:**
-- Users develop unhealthy relationship with food
-- Misleading insights (spike may be due to stress, not food)
-- Reduced trust when "bad" food doesn't cause spike next time
+- Wrong thresholds for each problem
+- Artifacts flagged as behavioral anomalies
+- Real anomalies missed because filtered as "artifacts"
 
 **Prevention:**
-- Never label foods as good/bad
-- Emphasize context (what else was eaten, activity level)
-- Show confidence level for food-glucose correlations
-- Encourage controlled experiments rather than conclusions
+1. Separate artifact detection from anomaly detection
+2. Use different thresholds:
+   - Artifact: physiological rate of change (>2-5 mg/dL/min)
+   - Anomaly: statistical deviation from personal baseline (>2 std dev)
+3. Process pipeline: artifact detection → clean data → pattern analysis → anomaly detection
+4. Document which problem each algorithm addresses
 
-**Detection:**
-- User feedback about food anxiety
-- Contradictory insights (same food, different outcomes)
-
-**Phase to address:** Insight Generation (nuance in messaging)
+**Phase to address:** ANLY-02 (Anomaly Detection)
 
 ---
 
-### Pitfall 10: Privacy and Data Handling Oversights
+### Pitfall 9: Over-Engineering for Theoretical Scale
 
-**What goes wrong:** The app handles sensitive health data without proper privacy measures, exposing users to risk and the developer to liability.
+**What goes wrong:**
+Implementing complex algorithms for scale that won't be reached, delaying time-to-market for minimal benefit.
 
-**Why it happens:** Health data privacy requirements (HIPAA, state laws, GDPR) are complex and easy to overlook in MVP development.
+**Why it happens:**
+- Premature optimization for millions of users
+- Implementing distributed processing for single-user analysis
+- Building real-time systems for batch file uploads
 
-**Key concerns:**
-- 59.8% of diabetes apps request "dangerous permissions"
-- 28.4% have no privacy policy
-- Free apps often monetize through data sharing
-- Glucose data is considered sensitive/PHI
+**Consequences:**
+- Increased complexity and maintenance burden
+- Delayed feature delivery
+- Over-engineered code that's harder to debug
 
 **Prevention:**
-- Provide clear, accessible privacy policy
-- Request minimal permissions
-- Encrypt data at rest and in transit
-- No third-party data sharing without explicit consent
-- Allow data export and deletion
-- Consider HIPAA compliance even if not legally required
+1. Optimize for current scale (14-day uploads, single user)
+2. Design interfaces for future scaling, but implement simple first
+3. Performance test at 10x expected load, not 1000x
+4. Document scaling considerations for future phases
 
-**Detection:**
-- Privacy audit of app permissions
-- Third-party SDK review for data transmission
-- Legal review of data handling practices
-
-**Phase to address:** Foundation (privacy by design from start)
+**Phase to address:** All phases (engineering judgment)
 
 ---
 
-## Phase-Specific Warnings
+## Technical Debt Patterns
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Project Setup | Regulatory boundary crossing | Legal review of app positioning, clear wellness framing |
-| Data Import | Data quality issues ignored | Implement validation, completeness checks, artifact detection |
-| Analysis Engine | Treating CGM as blood glucose | Document lag, implement time-alignment |
-| Analysis Engine | Insufficient data for patterns | Minimum data thresholds before analysis |
-| Analysis Engine | Performance on large datasets | Vectorized operations, efficient data structures |
-| Insight Generation | Over-promising actionability | Three-level model: data -> pattern -> action |
-| Insight Generation | Food demonization | Context-aware suggestions, avoid good/bad labels |
-| Frontend/UX | Alert fatigue | User-controlled notifications, batching, quiet modes |
-| Frontend/UX | Single metrics without context | Show related metrics together with education |
+Shortcuts that seem reasonable but create long-term problems.
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Fixed 10pm-6am sleep window | Fast implementation | Misclassifies ~30% of users | MVP only — label clearly |
+| Naive sliding window | Simpler code | O(n*W) performance, scales poorly | MVP only — must refactor |
+| Single anomaly threshold | Simpler logic | False positives/negatives | Never — must personalize |
+| Skip PISA detection | Faster time-to-market | False anomalies erode trust | Never — critical for accuracy |
+| Population baselines | No personalization needed | Irrelevant for many users | Never — must be personal |
+| No artifact filtering | Simpler pipeline | Corrupted patterns | Never — critical for accuracy |
 
 ---
 
-## Quick Reference: Critical Prevention Checklist
+## Integration Gotchas
 
-- [ ] Legal review confirms wellness positioning, not medical device
-- [ ] Clear disclaimers that app is not for diagnosis/treatment
-- [ ] Data quality validation before any analysis
-- [ ] Minimum 80% data completeness required for metrics
-- [ ] Minimum 14 days for pattern detection
-- [ ] Physiological lag documented and considered in timing
-- [ ] Related metrics shown together (TIR + CV + TBR)
-- [ ] Actionable suggestions, not just observations
-- [ ] Privacy policy and minimal permissions
-- [ ] Performance tested with realistic data volumes
+Common mistakes when connecting to existing system.
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Existing patterns.py | Duplicate time-of-day logic in sliding windows | Extend existing `_group_by_time_period` for sliding windows |
+| GlucoStats | Assume it handles all CGM analysis | Use for metrics (TIR, CV, GMI), custom logic for patterns |
+| Wellness language | Add disclaimers as afterthought | Bake wellness framing into all output from design |
+| Baseline comparison | Use population baselines | Always compute personal baseline from user's data |
+| Data quality | Assume validation handled upstream | Re-validate before anomaly/sleep analysis |
+
+---
+
+## Performance Traps
+
+Patterns that work at small scale but fail as usage grows.
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Naive sliding window | O(n*W) performance | Use incremental O(1) algorithms | >1000 readings with multiple windows |
+| Recomputing baselines | Analysis slow on repeated calls | Cache baseline calculations | Each analysis call |
+| Per-reading anomaly flags | Excessive memory | Aggregate anomalies by time period | Large datasets |
+| No window size limits | Memory explosion | Cap window sizes at 180 minutes | Users requesting larger windows |
+
+---
+
+## "Looks Done But Isn't" Checklist
+
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Anomaly Detection:** Often missing PISA filtering — verify overnight anomalies aren't sensor artifacts
+- [ ] **Sleep Analysis:** Often missing user-configurable sleep window — verify "10pm-6am" is labeled, not "sleep"
+- [ ] **Sliding Windows:** Often missing incremental optimization — verify O(1) per window, not O(W)
+- [ ] **Wellness Language:** Often missing in technical error messages — verify ALL user-facing text
+- [ ] **Baseline Comparison:** Often missing personalization — verify baseline is computed from user's own data
+- [ ] **Cross-Day Consistency:** Often missing weekday/weekend separation — verify patterns account for day-type differences
+- [ ] **Pattern Confidence:** Often missing confidence intervals — verify patterns show certainty level
+
+---
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| PISA not detected | MEDIUM | Add PISA detection module, reprocess historical data, re-issue insights |
+| Fixed sleep window confusion | LOW | Update labeling in all output, add user configuration option |
+| Aggressive thresholds | MEDIUM | Adjust thresholds based on user feedback, add personalization layer |
+| Wellness language crossed | HIGH | Audit all output text, potentially redesign UI, may need legal review |
+| Sliding window performance | MEDIUM | Refactor to incremental algorithm, may need architecture change |
+| Cross-day consistency poor | LOW | Add confidence intervals, separate weekday/weekend analysis |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| PISA misinterpretation | ANLY-02 (Anomaly Detection) | Test with known PISA data, verify artifacts flagged separately |
+| Fixed sleep window | ANLY-03 (Sleep Analysis) | Verify labeling says "10pm-6am window" not "sleep", test with edge cases |
+| Aggressive thresholds | ANLY-02 (Anomaly Detection) | Test with high-variability users, verify personalization |
+| Wellness language crossing | All phases (ongoing) | Manual review of all output text, verify wellness framing |
+| Sliding window performance | Behavioral Pattern Analysis | Performance test with max dataset size (14+ days), verify O(n) not O(n*W) |
+| Missing cross-day patterns | Behavioral Pattern Analysis | Verify weekday/weekend separation, test with known holiday data |
+| PISA in pattern calculations | ANLY-02 + ANLY-03 | Verify PISA periods excluded from pattern aggregations |
 
 ---
 
 ## Sources
 
-- [FDA General Wellness Guidance (2026)](https://www.fda.gov/media/100032/download) - HIGH confidence
-- [PMC: Processing Algorithm for CGM Data Quality Issues](https://pmc.ncbi.nlm.nih.gov/articles/PMC11843558/) - HIGH confidence
-- [medRxiv: Assessing Accuracy of CGM Metrics](https://www.medrxiv.org/content/10.1101/2025.02.13.25322196v1.full) - HIGH confidence
-- [PMC: Minding the Gaps in CGM](https://pmc.ncbi.nlm.nih.gov/articles/PMC3692219/) - HIGH confidence
-- [PMC: Designing the CGM Experience](https://pmc.ncbi.nlm.nih.gov/articles/PMC10899853/) - HIGH confidence
-- [NCBI: Diabetes Device Alarm Fatigue](https://ncbi.nlm.nih.gov/pmc/articles/PMC3869147/) - HIGH confidence
-- [BMC Bioinformatics: GlucoStats Library](https://bmcbioinformatics.biomedirect.com/articles/10.1186/s12859-025-06250-w) - HIGH confidence
-- [Nature: CGM-LSM Foundation Model](http://www.nature.com/articles/s44401-25-00039-y) - HIGH confidence
-- [JMIR: Diabetes Apps Privacy Analysis](https://diabetes.jmir.org/2021/1/e16146/PDF) - HIGH confidence
-- [FDA Safety Communication: Diabetes App Alerts](https://www.fda.gov/medical-devices/safety-communications/fda-alerts-patients-regularly-check-diabetes-related-smartphone-device-alert-settings-especially) - HIGH confidence
-- [AP News: FDA Alert on Diabetes Apps](https://apnews.com/article/diabetes-smartphone-apps-death-injury-fda-health-920b97d30e4330bfc67f249430b7c17e) - HIGH confidence
-- [Dexcom: Preventing Alert Fatigue](https://dexcom.com/en-us/all-access/dexcom-cgm-explained/preventing-alert-fatigue) - HIGH confidence
-- [PMC: Critical Reappraisal of TIR](https://pmc.ncbi.nlm.nih.gov/articles/PMC7753853/) - HIGH confidence
-- [UX Collective: CGM App UX Comparison](https://uxdesign.cc/comparing-dexcoms-home-screen-ux-over-time-9a974bea3f11) - MEDIUM confidence
+### Anomaly Detection & PISA
+- [Novel Method to Detect Pressure-Induced Sensor Attenuations (PISA)](https://journals.sagepub.com/doi/10.1177/1932296814553267) — Baysal et al., Journal of Diabetes Science and Technology (2014) — HIGH confidence
+- [Susceptibility of CGM Performance to Sleeping Position](https://pmc.ncbi.nlm.nih.gov/articles/PMC3879750/) — Mensh et al. (2013) — HIGH confidence
+- [Unsupervised Detection of Pressure-Induced Failures in CGM Sensors](https://www.research.unipd.it/handle/11577/3540043) — University of Padua (2024) — HIGH confidence
+- [Accuracy Requirements for Hypoglycemia Detector](https://pubmed.ncbi.nlm.nih.gov/19885133/) — Research on MARD requirements — HIGH confidence
+- [Critical Discussion of Alert Evaluations in CGM](https://pmc.ncbi.nlm.nih.gov/articles/PMC11307228/) — Episode vs value-based approaches — HIGH confidence
+
+### Sleep Inference
+- [Modeling CGM Data During Sleep](https://pmc.ncbi.nlm.nih.gov/articles/PMC8942115/) — Gaynanova et al., Biostatistics (2020) — HIGH confidence
+- [Nocturnal Glucose Prediction Using ML/DL](https://www.mdpi.com/2075-4418/14/7/740) — Kozinetz et al., Diagnostics (2024) — HIGH confidence
+- [Predicting Nocturnal Hypoglycemia in Adults with T1D](https://www.mdpi.com/1424-8220/20/6/1705) — MDPI Sensors (2020) — HIGH confidence
+
+### Sliding Window Algorithms
+- [Maintaining Stream Statistics over Sliding Windows](https://moodle2.units.it/pluginfile.php/718390/mod_resource/content/0/Stream_statistics_sliding_window.pdf) — Datar, Gionis, Indyk, Motwani (SIAM) — HIGH confidence
+- [Hammer Slide: Work- and CPU-efficient Streaming Window Aggregation](https://adms-conf.org/2018-camera-ready/SIMDWindowPaper_ADMS'18.pdf) — ADMS 2018 — MEDIUM confidence
+
+### Cross-Day & Behavioral Patterns
+- [Reproducibility of CGM Under Real-Life Conditions](https://www.nature.com/articles/s41598-023-40949-1.pdf) — Scientific Reports (2023) — HIGH confidence
+- [Temporal Glycemic Patterns in T1D and T2D](https://par.nsf.gov/biblio/10616916-temporal-glycemic-patterns-type-type-diabetes-insights-extended-continuous-glucose-monitoring) — NSF Public Access (2025) — HIGH confidence
+- [Intelligent Data-Driven Model for Diabetes Diurnal Patterns](https://eprints.whiterose.ac.uk/id/eprint/157489/1/Diabetes_diurnal_patterns_IEEE_journal_Accepted_.pdf) — IEEE (2020) — HIGH confidence
+- [Chronobiologically-Informed Features from CGM Data](https://journals.plos.org/digitalhealth/article/file?id=10.1371%2Fjournal.pdig.0000815&type=printable) — PLOS Digital Health (2024) — HIGH confidence
+
+### Wellness Language & FDA
+- [FDA 2026 Guidance on Digital Health Platforms](https://aimdek.com/blogs/fdas-new-2026-guidance-digital-health-platforms-wearables-and-cds/) — FDA guidance summary — HIGH confidence
+- [AI Claims Warning Letter Analysis](https://www.jdsupra.com/legalnews/ai-claims-yay-or-oy-a-recent-warning-6654618/) — JDSupra (2025) — HIGH confidence
+- [Health App Regulatory Compliance for AI-Built Apps](https://topflightapps.com/ideas/health-app-regulatory-compliance-ai-built/) — TopFlight Apps — MEDIUM confidence
+
+---
+
+*Pitfalls research for: CGM Insights v2.0 (Anomaly Detection, Sleep Analysis, Behavioral Patterns)*
+*Researched: 2026-06-10*

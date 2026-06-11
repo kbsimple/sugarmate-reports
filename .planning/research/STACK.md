@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Project:** CGM Insights
-**Researched:** 2026-04-23
+**Researched:** 2026-04-23 (v1.0), 2026-06-10 (v2.0 additions)
 **Overall Confidence:** HIGH
 
 ## Recommended Stack
@@ -17,7 +17,7 @@ The stack prioritizes **Python-first development** with minimal JavaScript, elim
 
 ---
 
-## Python Analysis Engine
+## Python Analysis Engine (v1.0)
 
 The core analysis engine is a standalone Python package that can be used as:
 1. A library imported by the web app
@@ -66,6 +66,213 @@ This is a **purpose-built library for CGM analysis**. It extracts 59 statistics 
 
 ---
 
+## v2.0 Additions: Pattern Analysis (Anomaly, Sleep, Behavioral)
+
+### New Dependencies for v2.0
+
+| Library | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| **scikit-learn** | 1.6+ | Anomaly detection (IsolationForest) | Industry standard for unsupervised anomaly detection. Linear O(n) complexity, no distribution assumptions, handles multivariate data. Well-suited for CGM outlier detection after feature engineering. |
+| **statsmodels** | 0.14+ | STL seasonal decomposition (optional) | Advanced trend/seasonal separation. Robust STL fitting automatically down-weights outliers. Useful for separating daily patterns from glucose trends. |
+
+**Why IsolationForest for Anomaly Detection:**
+- **Linear time complexity O(n)** — scales to millions of readings
+- **No distribution assumptions** — CGM data is non-normal
+- **Handles multivariate data naturally** — works with rolling features
+- **Production-proven** — widely deployed for time-series anomaly detection
+- **Minimal hyperparameters** — `contamination` is intuitive (expected anomaly rate)
+
+**Why statsmodels STL (Optional):**
+- For data with strong daily/weekly seasonality, STL separates:
+  - Trend component (long-term glucose changes)
+  - Seasonal component (daily patterns)
+  - Residual component (anomalies)
+- Robust fitting (`robust=True`) automatically down-weights outliers
+- Low-weight observations in the `weights` attribute flag anomalies
+
+### No New Libraries Needed
+
+| Capability | Existing Solution | Notes |
+|------------|-------------------|-------|
+| Time bucketing | Polars `rolling()`, `rolling_mean_by()` | Polars 1.x has excellent time-series support with temporal windowing (e.g., `"30m"`, `"1h"`, `"2h"`). Supports `every` parameter for sliding windows. |
+| Sleep window filtering | Polars `dt.hour()` filter | Simple time-based filtering for 10pm-6am window. No new library needed. |
+| CGM metrics | GlucoStats (59 metrics) | Already integrated. Covers time-in-range, variability (MAGE, CV, GVP), glycemic risk indices. Use for sleep window metrics. |
+| Sliding windows | Polars `group_by_dynamic()` | Native Polars capability for time-based groupings. Supports offset, closed interval options. |
+| Weekday/weekend split | Polars `dt.weekday()` | Polars datetime expressions. No new library needed. |
+| Cross-day consistency | SciPy `pearsonr`, `variation` | Already in ecosystem. Use for pattern correlation and coefficient of variation. |
+
+---
+
+## Integration Architecture
+
+### Project Structure
+
+```
+cgm-insights/
+├── pyproject.toml          # uv project config
+├── uv.lock                 # Locked dependencies
+├── src/
+│   ├── cgm_engine/         # Analysis engine (library)
+│   │   ├── __init__.py
+│   │   ├── parser.py       # Sugarmate Excel parsing
+│   │   ├── analysis.py     # GlucoStats integration
+│   │   ├── patterns.py     # Time-of-day, day-of-week analysis
+│   │   ├── anomaly.py      # [v2.0] IsolationForest anomaly detection
+│   │   ├── sleep.py        # [v2.0] Overnight pattern analysis
+│   │   ├── behavioral.py   # [v2.0] Cross-day consistency
+│   │   └── insights.py     # Actionable suggestions generation
+│   └── web/                # FastAPI application
+│       ├── __init__.py
+│       ├── main.py         # FastAPI app
+│       ├── routers/
+│       │   ├── upload.py   # File upload endpoint
+│       │   └── insights.py # Analysis endpoints
+│       ├── templates/      # Jinja2 templates
+│       │   ├── base.html
+│       │   ├── index.html
+│       │   └── results.html
+│       └── static/
+│           ├── css/
+│           └── js/
+├── cli.py                  # Typer CLI entry point
+└── tests/
+```
+
+### Integration Pattern (v2.0 Additions)
+
+```python
+# src/cgm_engine/anomaly.py
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import RobustScaler
+import polars as pl
+
+def detect_anomalies(df: pl.DataFrame) -> pl.DataFrame:
+    """Detect glucose anomalies using IsolationForest on engineered features."""
+
+    # Feature engineering with Polars (existing pattern)
+    df_features = df.with_columns([
+        pl.col("glucose").rolling_mean_by("timestamp", window_size="2h").alias("rolling_mean_2h"),
+        pl.col("glucose").rolling_std_by("timestamp", window_size="2h").alias("rolling_std_2h"),
+        ((pl.col("glucose") - pl.col("rolling_mean_2h")) / pl.col("rolling_std_2h")).alias("z_score"),
+        pl.col("glucose").shift(1).alias("glucose_lag_1"),      # 5-min lag
+        pl.col("glucose").shift(12).alias("glucose_lag_1h"),    # 1-hour lag
+    ])
+
+    # IsolationForest detection
+    clf = IsolationForest(
+        n_estimators=200,
+        contamination=0.01,  # ~3 anomalies/day expected
+        random_state=42
+    )
+
+    # Use RobustScaler (resistant to outliers)
+    features = df_features.select(["z_score", "rolling_std_2h", "glucose_lag_1h"]).to_numpy()
+    scaler = RobustScaler()
+    X_scaled = scaler.fit_transform(features)
+
+    anomaly_scores = clf.fit_predict(X_scaled)
+    return df_features.with_columns(pl.Series("is_anomaly", anomaly_scores))
+```
+
+```python
+# src/cgm_engine/sleep.py
+import polars as pl
+from glucostats import ExtractGlucoStats
+
+def analyze_sleep_patterns(df: pl.DataFrame) -> dict:
+    """Analyze overnight glucose patterns from inferred 10pm-6am window."""
+
+    # Filter to sleep window
+    sleep_df = df.filter(
+        (pl.col("timestamp").dt.hour() >= 22) | (pl.col("timestamp").dt.hour() < 6)
+    )
+
+    # Convert to pandas for GlucoStats
+    sleep_pandas = sleep_df.to_pandas()
+
+    # Compute sleep-specific metrics
+    stats_extractor = ExtractGlucoStats([
+        "mean", "CV", "TIR_70_180", "TBR_54_70", "TBR_below_54",
+        "MAGE", "min_lbgi"
+    ])
+
+    sleep_metrics = stats_extractor.transform(sleep_pandas)
+
+    return {
+        "mean_glucose": sleep_metrics["mean"].iloc[0],
+        "time_in_range": sleep_metrics["TIR_70_180"].iloc[0],
+        "variability_cv": sleep_metrics["CV"].iloc[0],
+        "mage": sleep_metrics["MAGE"].iloc[0],
+    }
+```
+
+```python
+# src/cgm_engine/behavioral.py
+from scipy.stats import pearsonr
+from scipy.stats.mstats import variation
+import polars as pl
+import numpy as np
+
+def compute_pattern_consistency(df: pl.DataFrame, time_bucket: str = "1h") -> dict:
+    """Analyze cross-day consistency of time-bucketed patterns."""
+
+    # Create time buckets and weekday/weekend labels
+    bucketed = df.with_columns([
+        pl.col("timestamp").dt.truncate(time_bucket).alias("bucket"),
+        pl.col("timestamp").dt.weekday().alias("day_of_week"),
+    ]).with_columns(
+        (pl.col("day_of_week") < 5).alias("is_weekday")  # Mon-Fri
+    )
+
+    # Compute mean glucose per bucket per day
+    daily_patterns = bucketed.group_by(["day_of_week", "bucket"]).agg(
+        pl.col("glucose").mean().alias("mean_glucose")
+    )
+
+    # Weekday vs weekend comparison
+    weekday_patterns = daily_patterns.filter(pl.col("is_weekday"))
+    weekend_patterns = daily_patterns.filter(~pl.col("is_weekday"))
+
+    # Compute coefficient of variation for consistency
+    # Lower CV = more consistent behavior across days
+    def compute_cv(group):
+        values = group["mean_glucose"].to_numpy()
+        if len(values) < 2:
+            return None
+        return float(variation(values))  # std/mean
+
+    weekday_cv = compute_cv(weekday_patterns)
+    weekend_cv = compute_cv(weekend_patterns)
+
+    # Correlation between weekday patterns (same bucket across days)
+    # High correlation = consistent timing of glucose patterns
+    pivot = daily_patterns.pivot(
+        values="mean_glucose",
+        index="bucket",
+        columns="day_of_week"
+    )
+    # Drop null columns for correlation
+    pivot_clean = pivot.drop_nulls()
+
+    if pivot_clean.height >= 3:  # Need enough data for correlation
+        corr, p_value = pearsonr(
+            pivot_clean["Monday"].to_numpy(),
+            pivot_clean["Tuesday"].to_numpy()
+        )
+    else:
+        corr, p_value = None, None
+
+    return {
+        "weekday_cv": weekday_cv,
+        "weekend_cv": weekend_cv,
+        "pattern_correlation": corr,
+        "correlation_p_value": p_value,
+        "interpretation": "consistent" if weekday_cv < 0.15 else "variable"
+    }
+```
+
+---
+
 ## Web Frontend Stack
 
 ### Backend Framework
@@ -108,103 +315,18 @@ This is a **purpose-built library for CGM analysis**. It extracts 59 statistics 
 
 ---
 
-## Integration Architecture
-
-### Project Structure
-
-```
-cgm-insights/
-├── pyproject.toml          # uv project config
-├── uv.lock                 # Locked dependencies
-├── src/
-│   ├── cgm_engine/         # Analysis engine (library)
-│   │   ├── __init__.py
-│   │   ├── parser.py       # Sugarmate Excel parsing
-│   │   ├── analysis.py     # GlucoStats integration
-│   │   ├── patterns.py     # Time-of-day, day-of-week analysis
-│   │   └── insights.py     # Actionable suggestions generation
-│   └── web/                # FastAPI application
-│       ├── __init__.py
-│       ├── main.py         # FastAPI app
-│       ├── routers/
-│       │   ├── upload.py   # File upload endpoint
-│       │   └── insights.py # Analysis endpoints
-│       ├── templates/      # Jinja2 templates
-│       │   ├── base.html
-│       │   ├── index.html
-│       │   └── results.html
-│       └── static/
-│           ├── css/
-│           └── js/
-├── cli.py                  # Typer CLI entry point
-└── tests/
-```
-
-### Integration Pattern
-
-```python
-# src/web/main.py
-from fastapi import FastAPI, UploadFile
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from cgm_engine import analyze_file, get_insights
-
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="src/web/static"), name="static")
-templates = Jinja2Templates(directory="src/web/templates")
-
-@app.post("/analyze")
-async def analyze(file: UploadFile):
-    # Engine is a library - just import and call
-    data = await file.read()
-    result = analyze_file(data)  # Polars-based processing
-    insights = get_insights(result)  # GlucoStats + custom logic
-    return {"statistics": result, "insights": insights}
-
-@app.get("/results/{session_id}", response_class=HTMLResponse)
-async def results(request: Request, session_id: str):
-    # HTMX partials for progressive enhancement
-    return templates.TemplateResponse(
-        request=request,
-        name="results.html",
-        context={"data": get_cached_results(session_id)}
-    )
-```
-
-### CLI Usage
-
-```python
-# cli.py
-import typer
-from cgm_engine import analyze_file, generate_report
-
-app = typer.Typer()
-
-@app.command()
-def analyze(path: str, output: str = "report.html"):
-    """Analyze CGM data from file."""
-    result = analyze_file(path)
-    generate_report(result, output)
-    typer.echo(f"Report saved to {output}")
-
-if __name__ == "__main__":
-    app()
-```
-
----
-
 ## Package Management
 
 | Tool | Purpose | Why |
 |------|---------|-----|
 | **uv** | Package manager, venv, Python version | 10-100x faster than pip; replaces pip + virtualenv + pyenv + pip-tools; lockfile reproducibility; 2026 standard |
 
-### pyproject.toml
+### pyproject.toml (Updated for v2.0)
 
 ```toml
 [project]
 name = "cgm-insights"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.12"
 dependencies = [
     # Core
@@ -221,6 +343,10 @@ dependencies = [
 
     # CGM Analysis
     "glucostats>=1.0.0",
+
+    # [v2.0] Pattern Analysis
+    "scikit-learn>=1.6.0",
+    "statsmodels>=0.14.0",  # Optional for STL decomposition
 
     # CLI
     "typer>=0.24.2",
@@ -240,6 +366,91 @@ dev-dependencies = [
     "pytest>=8.0",
     "ruff>=0.11.0",
 ]
+```
+
+---
+
+## v2.0 Alternatives Considered
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| IsolationForest | Local Outlier Factor (LOF) | Small datasets (<10k rows), when anomalies are in locally sparse regions near dense clusters |
+| IsolationForest | isotree (Extended IF) | Multimodal distributions, mixed numerical/categorical data, when density-based scoring needed |
+| IsolationForest | LSTM Autoencoder | Deep learning preferred, complex temporal patterns, very large datasets with GPU |
+| scikit-learn | anomaly-pipeline | Production ensemble needed, want multiple detection methods combined automatically |
+| RobustScaler | StandardScaler | NOT recommended - StandardScaler is sensitive to outliers, defeats anomaly detection purpose |
+| STL decomposition | MSTL (multiple seasonality) | When both daily AND weekly seasonality need separation (e.g., hourly data with 24 and 168 periods) |
+
+---
+
+## What NOT to Use (v2.0)
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Deep learning (LSTM, Transformers) | Overkill for CGM anomaly detection. Requires GPU, large training data, complex deployment. | IsolationForest with engineered features |
+| Prophet for CGM patterns | Designed for forecasting, not anomaly detection. Heavy dependency. | STL decomposition (if needed) + IsolationForest |
+| TensorFlow/PyTorch | Adds ML infrastructure complexity for simple outlier detection. | scikit-learn (NumPy-based, no GPU needed) |
+| DBSCAN clustering | O(n^2) complexity, poor for large CGM datasets (~288 readings/day). | IsolationForest O(n) complexity |
+| Commercial CGM analytics SDKs | Vendor lock-in, limited customization, often require device pairing. | Open-source stack (Polars + GlucoStats + scikit-learn) |
+
+---
+
+## v2.0 Implementation Notes
+
+### 1. Feature Engineering is Critical for IsolationForest
+
+IsolationForest has no temporal awareness. Must engineer rolling features:
+
+```python
+# Required features for CGM anomaly detection
+features = [
+    "z_score",           # (glucose - rolling_mean) / rolling_std
+    "rolling_std_2h",    # 2-hour volatility
+    "glucose_lag_1h",    # 1-hour change rate proxy
+    "hour_of_day",       # Time context (sin/cos encoded)
+]
+```
+
+### 2. Use RobustScaler, Not StandardScaler
+
+StandardScaler uses mean/std which are influenced by outliers. RobustScaler uses median/IQR, which are outlier-resistant. This is critical for anomaly detection where outliers should NOT influence the scaling.
+
+### 3. Contamination Parameter Tuning
+
+Set `contamination` based on expected anomaly rate. For CGM:
+- 1% contamination ~= 3 anomalies/day (288 readings)
+- 0.5% contamination ~= 1-2 anomalies/day
+- Start conservative, tune based on user feedback
+
+### 4. Polars Time Bucketing for Behavioral Analysis
+
+```python
+# 30-minute buckets, sliding every 5 minutes
+df.group_by_dynamic(
+    "timestamp",
+    every="5m",        # Step size for sliding
+    period="30m",      # Window duration
+).agg([
+    pl.col("glucose").mean().alias("mean_glucose"),
+    pl.col("glucose").std().alias("std_glucose"),
+])
+```
+
+### 5. STL for Seasonal Baseline (Optional, Advanced)
+
+```python
+from statsmodels.tsa.seasonal import STL
+
+# For daily glucose patterns with hourly data
+hourly = df.group_by_dynamic("timestamp", every="1h").agg(pl.col("glucose").mean())
+
+# Decompose: trend + seasonal (daily) + residual
+stl = STL(hourly["glucose"], period=24, robust=True)  # 24 = daily cycle
+res = stl.fit()
+
+# Anomalies in residuals or have low weights
+residuals = res.resid
+weights = res.weights  # Low weights = outliers
 ```
 
 ---
@@ -276,7 +487,7 @@ CMD ["uv", "run", "uvicorn", "src.web.main:app", "--host", "0.0.0.0", "--port", 
 
 ---
 
-## Alternatives Considered
+## Alternatives Considered (v1.0)
 
 | Category | Recommended | Alternative | Why Not |
 |----------|-------------|-------------|---------|
@@ -291,7 +502,7 @@ CMD ["uv", "run", "uvicorn", "src.web.main:app", "--host", "0.0.0.0", "--port", 
 
 ---
 
-## What NOT to Use
+## What NOT to Use (v1.0)
 
 | Avoid | Why |
 |-------|-----|
@@ -314,11 +525,15 @@ cd cgm-insights
 # Set Python version
 uv python pin 3.12
 
-# Add dependencies
+# Add dependencies (v1.0)
 uv add fastapi "uvicorn[standard]" jinja2
 uv add polars pandas numpy scipy openpyxl
 uv add glucostats
 uv add typer
+
+# Add v2.0 dependencies
+uv add scikit-learn
+uv add statsmodels  # Optional for STL
 
 # Add dev dependencies
 uv add --dev pytest ruff
@@ -342,6 +557,9 @@ uv run cgm-cli analyze data.xlsx
 | **GlucoStats** | MEDIUM | New library (Sept 2025); well-documented but may need patches for Sugarmate format |
 | **Integration** | HIGH | Standard FastAPI library import pattern |
 | **Deployment** | HIGH | Railway/SnapDeploy auto-detect FastAPI |
+| **v2.0 Anomaly Detection** | HIGH | IsolationForest is production-proven; scikit-learn stable; feature engineering straightforward |
+| **v2.0 Sleep Analysis** | HIGH | Time-filtering with Polars; GlucoStats for metrics; no new concepts |
+| **v2.0 Behavioral Patterns** | MEDIUM | scipy.stats correlation/variation APIs stable; may need tuning for CGM-specific thresholds |
 
 ---
 
@@ -350,6 +568,7 @@ uv run cgm-cli analyze data.xlsx
 ### Data Processing
 - [Polars vs Pandas 2026](https://www.analyticsinsight.net/programming/polars-vs-pandas-in-2026-should-you-make-the-switch) - Performance benchmarks, when to use each
 - [Polars 1.40.0 Release](https://github.com/pola-rs/polars/releases/tag/py-1.40.0) - Current version
+- [Polars Rolling Operations](https://docs.pola.rs/api/python/stable/reference/dataframe/api/polars.DataFrame.rolling.html) - Time-based rolling API
 - [Pandas 3.0.2 Release](https://github.com/pandas-dev/pandas/releases/tag/v3.0.2) - Current stable
 - [NumPy 2.4.4 Release](https://github.com/numpy/numpy/releases) - Current stable
 - [SciPy 1.17.1 Release](https://github.com/scipy/scipy/releases) - Current stable
@@ -357,6 +576,24 @@ uv run cgm-cli analyze data.xlsx
 ### CGM Analysis
 - [GlucoStats Documentation](https://glucostats.readthedocs.io/en/latest/) - Official docs
 - [GlucoStats Paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-025-06250-w) - BMC Bioinformatics publication
+- [GlucoStats PyPI](https://pypi.org/project/glucostats/) - Version 1.0.0
+
+### v2.0 Anomaly Detection
+- [Context7] /websites/scikit-learn_stable - IsolationForest API, contamination parameter, RobustScaler (HIGH confidence)
+- [PyData Bench: Time Series Anomaly Detection](https://pythondatabench.com/article/anomaly-detection-time-series-python-isolation-forest-lof-stl) - IsolationForest vs LOF comparison, production best practices (HIGH confidence)
+- [dtaianomaly Documentation](https://dtaianomaly.readthedocs.io/en/0.4.1/api/anomaly_detection_algorithms/isolation_forest.html) - Time-series specific IsolationForest (MEDIUM confidence)
+- [isotree Documentation](https://isotree.readthedocs.io/en/latest/) - Extended Isolation Forest variants (MEDIUM confidence)
+
+### v2.0 Sleep & Behavioral Analysis
+- [medRxiv: Sleep-CGM Study](https://www.medrxiv.org/content/10.64898/2026.03.04.26347496v1.full.pdf) - Sleep consistency and glycemic control in 227,860 nights (HIGH confidence)
+- [JAMA Network: Sleep Duration and CGM](https://jamanetwork-com.libproxy.ajou.ac.kr/journals/jamanetworkopen/fullarticle/2831009) - Sleep timing and glycemic variability (HIGH confidence)
+- [Context7] /websites/scipy_doc_scipy - pearsonr, spearmanr, variation (coefficient of variation) (HIGH confidence)
+- [Retail Calendar Pattern Finder](https://github.com/AmirhosseinHonardoust/Retail-Calendar-Pattern-Finder) - Day-of-week analysis, hierarchical baselines (MEDIUM confidence)
+
+### STL Decomposition
+- [Context7] /websites/statsmodels_stable - STL, MSTL decomposition, robust fitting (HIGH confidence)
+- [statsmodels STL API](https://www.statsmodels.org/stable/generated/statsmodels.tsa.seasonal.STL.html) - Official documentation (HIGH confidence)
+- [statsmodels STL Notebook](https://www.statsmodels.org/devel/examples/notebooks/generated/stl_decomposition.html) - Usage examples (HIGH confidence)
 
 ### Web Framework
 - [FastAPI Latest](https://github.com/fastapi/fastapi/releases/tag/0.136.0) - Current version
