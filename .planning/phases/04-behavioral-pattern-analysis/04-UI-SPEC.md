@@ -51,9 +51,9 @@ Declared values match existing site conventions (Tailwind utility scale, multipl
 | Token | Tailwind class | Pixel value | Usage in this phase |
 |-------|---------------|-------------|---------------------|
 | xs | `gap-1`, `mt-1`, `p-1` | 4px | Details summary margin, inline badge gaps |
-| sm | `gap-2`, `p-2`, `mt-2` | 8px | Icon-to-label spacing, inner badge padding |
+| sm | `gap-2`, `p-2`, `mt-2` | 8px | Icon-to-label spacing, inner badge padding, bucket row padding, bucket list vertical gap |
 | md | `gap-4`, `p-4`, `mb-4` | 16px | Card body padding, section-internal gaps |
-| lg | `mb-6`, `space-y-3` | 24px | Between behavioral section and adjacent sections |
+| lg | `mb-6` | 24px | Between behavioral section and adjacent sections |
 | xl | `mb-8` | 32px | Top of results page (pre-existing) |
 
 Exceptions:
@@ -65,13 +65,13 @@ Exceptions:
 ## Typography
 
 All values match the existing site's established Tailwind classes. Do not introduce new sizes.
+Default browser weight (400/normal) is used for all text not listed below — no declaration needed.
 
 | Role | Tailwind class | Approx size | Weight | Line Height | Usage |
 |------|---------------|-------------|--------|-------------|-------|
 | Section heading | `text-lg font-bold` | ~18px | 700 | 1.2 | "Behavioral Patterns" card title |
 | Bucket label | `text-sm font-medium` | ~14px | 500 | 1.5 | Time range label (e.g., "12:00–12:30") |
-| Body / descriptor | `text-sm` | ~14px | 400 | 1.5 | Avg glucose value, day type note |
-| Supporting detail | `text-xs` | ~12px | 400 | 1.5 | CV score in `<details>`, read count, disclaimer |
+| Supporting detail | `text-xs` | ~12px | default | 1.5 | CV score in `<details>`, read count, disclaimer |
 
 Source: Derived from existing patterns_list.html and metrics_card.html conventions.
 
@@ -170,8 +170,8 @@ All 288 buckets are rendered per window size; the list is scrollable.
 Structure (single bucket row):
 
 ```
-div.bg-base-200.rounded-lg.p-3.flex.items-center.justify-between
-  div.flex.items-center.gap-3
+div.bg-base-200.rounded-lg.p-2.flex.items-center.justify-between
+  div.flex.items-center.gap-2
     span.text-sm.font-medium          → bucket label ("12:00–12:30")
     badge [Consistent|Moderate|Variable]  → see color table above
   div.text-right
@@ -208,7 +208,7 @@ than 5 days of data in the uploaded file):
 div.alert.alert-info
   svg [info icon, 24×24, stroke-based]
   div
-    h3.font-semibold   → "Not enough data for behavioral patterns"
+    h3.font-bold   → "Not enough data for behavioral patterns"
     p.text-sm.mt-1     → informational copy (see Copywriting Contract below)
 ```
 
@@ -221,11 +221,11 @@ Pattern: matches quality warning alert style in results.html line 39.
 Rendered below the tab component, inside the same card, when notable patterns exist.
 
 ```
-h4.font-semibold.text-md.mt-4.mb-3  → "Pattern Insights"
-div.space-y-3
+h4.font-bold.text-md.mt-4.mb-2  → "Pattern Insights"
+div.space-y-2
   [suggestion cards — same structure as patterns_list.html suggestion items]
   div.bg-base-200.rounded-lg.p-4
-    div.flex.items-start.gap-3
+    div.flex.items-start.gap-2
       badge badge-info  → "timing" or "variability"
       div.flex-1
         h5.font-medium         → suggestion title
@@ -240,7 +240,7 @@ Pattern: identical to existing suggestion items in patterns_list.html lines 40�
 ### 7. Wellness Disclaimer (bottom of behavioral section)
 
 ```
-div.bg-base-200.rounded-lg.p-3.mt-4
+div.bg-base-200.rounded-lg.p-2.mt-4
   p.text-xs.text-base-content/60
     → "Wellness Information Only: ..."
 ```
