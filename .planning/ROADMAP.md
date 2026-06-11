@@ -159,8 +159,13 @@ Plans:
 4. User sees weekly summary of anomaly patterns (aggregate counts, time distribution) rather than individual alerts
 5. All anomaly insights use wellness language ("unusual pattern" not "abnormal")
 
-**Plans:**
-- [ ] TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Core library: anomaly_detection.py with AnomalyDetectionResult, WeeklySummary, PISA filter, severity classification, analyze_anomalies()
+- [ ] 06-02-PLAN.md — Public API wiring: analytics/__init__.py and cgm_insights/__init__.py exports; generate_anomaly_suggestions() + templates in suggestions.py
+- [ ] 06-03-PLAN.md — Web integration: session storage, upload pipeline, results route, anomaly_detection.html component
+- [ ] 06-04-PLAN.md — CLI flag and test suite: --anomaly flag, Rich table renderer, test_anomaly_detection.py (≥8 tests)
 
 ---
 
@@ -173,7 +178,7 @@ Plans:
 | 3. Web Interface + Reports | 4/4 | Complete | 03-01, 03-02, 03-03, 03-04 |
 | 4. Behavioral Pattern Analysis | 4/4 | Complete | 04-01, 04-02, 04-03, 04-04 |
 | 5. Sleep Analysis | 4/4 | Complete | 05-01, 05-02, 05-03, 05-04 |
-| 6. Anomaly Detection | 0/0 | Not started | - |
+| 6. Anomaly Detection | 0/4 | Not started | - |
 
 ---
 
@@ -244,18 +249,18 @@ Plans:
 | SLEEP-04 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
 | SLEEP-05 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
 | SLEEP-06 | Phase 5 | Complete (05-01, 05-02, 05-03, 05-04) |
-| ANLY-02 | Phase 6 | Pending |
-| ANLY-03 | Phase 6 | Pending |
-| ANLY-04 | Phase 6 | Pending |
-| ANLY-05 | Phase 6 | Pending |
-| ANLY-06 | Phase 6 | Pending |
+| ANLY-02 | Phase 6 | Planned (06-01, 06-04) |
+| ANLY-03 | Phase 6 | Planned (06-01, 06-04) |
+| ANLY-04 | Phase 6 | Planned (06-01, 06-04) |
+| ANLY-05 | Phase 6 | Planned (06-02, 06-03) |
+| ANLY-06 | Phase 6 | Planned (06-02, 06-03, 06-04) |
 
 **Summary:**
 - v1.0 requirements: 19 total (complete)
 - v2.0 requirements: 17 total
 - Phase 4: 6 requirements (all complete)
 - Phase 5: 6 requirements (all planned)
-- Phase 6: 5 requirements
+- Phase 6: 5 requirements (all planned)
 - Coverage: 17/17 (100%)
 
 ---
