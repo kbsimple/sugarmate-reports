@@ -12,6 +12,11 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from cgm_insights.analytics.patterns import PatternResult, PatternType, PatternSeverity
+from cgm_insights.analytics.behavioral_patterns import (
+    BehavioralPattern,
+    BehavioralAnalysisResult,
+    ConsistencyLabel,
+)
 from cgm_insights.models import AnalysisResults
 
 
@@ -154,6 +159,33 @@ SUGGESTION_TEMPLATES = {
         "category": SuggestionCategory.CONTROL,
         "priority": 3,
     },
+    "behavioral_consistent": {
+        "title": "Consistent period detected",
+        "description": "Your glucose during {bucket_label} is particularly consistent across days.",
+        "action": (
+            "This period may be a useful anchor for your routine — "
+            "consider noting what contributes to this consistency."
+        ),
+        "category": SuggestionCategory.TIMING,
+        "priority": 3,
+    },
+    "behavioral_variable": {
+        "title": "Variable period detected",
+        "description": "Your glucose during {bucket_label} tends to vary more across days.",
+        "action": "Consider exploring what differs on days when this period looks higher or lower.",
+        "category": SuggestionCategory.VARIABILITY,
+        "priority": 3,
+    },
+    "behavioral_weekday_weekend_diff": {
+        "title": "Weekday vs weekend difference",
+        "description": (
+            "During {bucket_label}, your weekday glucose ({weekday_avg:.0f} mg/dL) "
+            "and weekend glucose ({weekend_avg:.0f} mg/dL) follow different patterns."
+        ),
+        "action": "Consider whether routines during this time differ between weekdays and weekends.",
+        "category": SuggestionCategory.CONTROL,
+        "priority": 4,
+    },
 }
 
 
@@ -186,6 +218,87 @@ def generate_suggestions(
     # Sort by priority (1 = highest priority, comes first)
     suggestions.sort(key=lambda s: s.priority)
 
+    return suggestions
+
+
+def generate_behavioral_suggestions(
+    behavioral_result: BehavioralAnalysisResult,
+) -> list[Suggestion]:
+    """Generate actionable suggestions from behavioral pattern analysis.
+
+    Selects notable patterns (Consistent and Variable labels) and generates
+    one suggestion per notable pattern. All suggestions use wellness language.
+    Weekday/weekend difference suggestions are generated when both averages
+    are available and differ by more than 10 mg/dL.
+
+    Args:
+        behavioral_result: Result from analyze_behavioral_patterns().
+
+    Returns:
+        List of Suggestion objects sorted by priority (1=highest).
+    """
+    if not behavioral_result.patterns:
+        return []
+
+    suggestions: list[Suggestion] = []
+    # Limit to top 3 consistent and top 3 variable patterns to avoid suggestion flood
+    consistent_patterns = [
+        p for p in behavioral_result.patterns
+        if p.consistency_label == ConsistencyLabel.CONSISTENT
+    ][:3]
+    variable_patterns = [
+        p for p in behavioral_result.patterns
+        if p.consistency_label == ConsistencyLabel.VARIABLE
+    ][:3]
+
+    for pattern in consistent_patterns:
+        template = SUGGESTION_TEMPLATES["behavioral_consistent"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference=f"Consistent period: {pattern.bucket_label}",
+            title=template["title"],
+            description=template["description"].format(bucket_label=pattern.bucket_label),
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+
+    for pattern in variable_patterns:
+        template = SUGGESTION_TEMPLATES["behavioral_variable"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference=f"Variable period: {pattern.bucket_label}",
+            title=template["title"],
+            description=template["description"].format(bucket_label=pattern.bucket_label),
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
+
+    # Weekday/weekend diff: only for patterns where both averages exist and differ > 10 mg/dL
+    for pattern in behavioral_result.patterns:
+        if (
+            pattern.weekday_avg_glucose is not None
+            and pattern.weekend_avg_glucose is not None
+            and abs(pattern.weekday_avg_glucose - pattern.weekend_avg_glucose) > 10.0
+        ):
+            template = SUGGESTION_TEMPLATES["behavioral_weekday_weekend_diff"]
+            suggestions.append(Suggestion(
+                category=template["category"],
+                pattern_reference=f"Weekday/weekend diff: {pattern.bucket_label}",
+                title=template["title"],
+                description=template["description"].format(
+                    bucket_label=pattern.bucket_label,
+                    weekday_avg=pattern.weekday_avg_glucose,
+                    weekend_avg=pattern.weekend_avg_glucose,
+                ),
+                action=template["action"],
+                priority=template["priority"],
+                wellness_disclaimer=True,
+            ))
+            break  # One weekday/weekend diff suggestion is enough
+
+    suggestions.sort(key=lambda s: s.priority)
     return suggestions
 
 
