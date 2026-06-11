@@ -41,6 +41,7 @@ from cgm_insights.analytics.behavioral_patterns import (
     analyze_behavioral_patterns,
     ConsistencyLabel,
 )
+from cgm_insights.analytics.overnight_patterns import analyze_overnight_patterns
 from cgm_insights.output.suggestions import (
     generate_suggestions,
     format_suggestions_rich,
@@ -109,6 +110,72 @@ def _render_behavioral_patterns(
         console.print()
 
 
+def _render_overnight_patterns(
+    result,
+    console: Console,
+) -> None:
+    """Render overnight glucose patterns as a Rich table.
+
+    Shows per-metric summary row, stability score, and weekday/weekend split
+    if available. Never uses "sleep" or clinical metric names.
+
+    Args:
+        result: OvernightAnalysisResult from analyze_overnight_patterns().
+        console: Rich Console for output.
+    """
+    from rich.table import Table
+
+    console.print("\n[bold cyan]Overnight Patterns (10pm–6am)[/bold cyan]")
+    console.print(f"[dim]({result.nights_with_data} nights of data)[/dim]\n")
+
+    table = Table(
+        title="Overnight Window Metrics",
+        show_header=True,
+        header_style="bold",
+    )
+    table.add_column("Metric", style="white", width=22)
+    table.add_column("Value", style="cyan", width=16)
+
+    if result.mean_glucose is not None:
+        table.add_row("Mean Glucose", f"{result.mean_glucose:.0f} mg/dL")
+    if result.tir_pct is not None:
+        table.add_row("Time in Range (70–180)", f"{result.tir_pct:.1f}%")
+    if result.cv is not None:
+        table.add_row("Variability (CV)", f"{result.cv:.1f}%")
+    if result.tbr_pct is not None:
+        table.add_row("Time Below Range (<70)", f"{result.tbr_pct:.1f}%")
+    if result.stability_score is not None:
+        score_pct = result.stability_score * 100
+        table.add_row(
+            "Overnight Stability Score",
+            f"{score_pct:.0f}% — {result.stability_label}",
+        )
+
+    console.print(table)
+
+    if result.weekday_mean_glucose is not None and result.weekend_mean_glucose is not None:
+        console.print(
+            f"\n[dim]Weekday nights avg:[/dim] {result.weekday_mean_glucose:.0f} mg/dL  "
+            f"[dim]Weekend nights avg:[/dim] {result.weekend_mean_glucose:.0f} mg/dL"
+        )
+
+    exc = result.excursion_summary
+    if exc.get("total_excursion_nights", 0) > 0:
+        console.print("\n[yellow]Overnight patterns of note:[/yellow]")
+        if exc.get("sustained_low_nights", 0) > 0:
+            console.print(
+                f"  {exc['sustained_low_nights']} of {exc['total_nights']} nights: "
+                "sustained low glucose periods"
+            )
+        if exc.get("sustained_high_nights", 0) > 0:
+            console.print(
+                f"  {exc['sustained_high_nights']} of {exc['total_nights']} nights: "
+                "sustained elevated glucose periods"
+            )
+
+    console.print(f"\n[dim]Window: {result.window_label}[/dim]")
+
+
 def _run_analysis(
     file_path: Path,
     start_date: Optional[str],
@@ -118,6 +185,7 @@ def _run_analysis(
     compare: bool,
     insights: bool,
     behavioral: bool,
+    overnight: bool,
     console: Console,
 ) -> None:
     """Run analysis on a local file and print results to console."""
@@ -132,7 +200,7 @@ def _run_analysis(
     )
 
     readings = None
-    if visualize or compare or insights or behavioral:
+    if visualize or compare or insights or behavioral or overnight:
         parser = get_parser(str(file_path))
         readings = parser.parse(str(file_path), start_date=start, end_date=end)
         if exclude_warmup and readings:
@@ -206,6 +274,25 @@ def _run_analysis(
     elif behavioral and not readings:
         console.print("\n[yellow]Behavioral patterns require data. No readings available.[/yellow]")
 
+    if overnight and readings:
+        try:
+            overnight_result = analyze_overnight_patterns(readings)
+            if overnight_result.insufficient_data:
+                console.print(
+                    "\n[yellow]Overnight patterns require at least 5 nights of data "
+                    "in the 10pm–6am window.[/yellow]"
+                )
+            else:
+                _render_overnight_patterns(overnight_result, console)
+        except Exception as e:
+            console.print(
+                f"\n[yellow]Could not generate overnight patterns: {e}[/yellow]"
+            )
+    elif overnight and not readings:
+        console.print(
+            "\n[yellow]Overnight patterns require data. No readings available.[/yellow]"
+        )
+
     console.print(f"\n[dim]Note: {GMI_CAVEAT}[/dim]")
 
 
@@ -242,6 +329,11 @@ def analyze(
         "--behavioral/--no-behavioral",
         help="Show time-bucketed behavioral patterns (30/60/120 min windows)",
     ),
+    overnight: bool = typer.Option(
+        True,
+        "--overnight/--no-overnight",
+        help="Show overnight glucose patterns (10pm–6am window)",
+    ),
 ) -> None:
     """Analyze CGM data from a local file and display metrics.
 
@@ -252,7 +344,7 @@ def analyze(
     """
     console = Console()
     try:
-        _run_analysis(file_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, console)
+        _run_analysis(file_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, overnight, console)
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
@@ -287,6 +379,11 @@ def download_and_analyze(
         "--behavioral/--no-behavioral",
         help="Show time-bucketed behavioral patterns (30/60/120 min windows)",
     ),
+    overnight: bool = typer.Option(
+        True,
+        "--overnight/--no-overnight",
+        help="Show overnight glucose patterns (10pm–6am window)",
+    ),
 ) -> None:
     """Download a CGM data file from a URL and analyze it.
 
@@ -313,7 +410,7 @@ def download_and_analyze(
             tmp_path = raw_path.with_name(raw_path.name + suffix)
             raw_path.rename(tmp_path)
             console.print("[green]Download complete.[/green]\n")
-            _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, console)
+            _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, overnight, console)
         finally:
             tmp_path.unlink(missing_ok=True)
 
