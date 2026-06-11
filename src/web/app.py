@@ -7,6 +7,7 @@ This module provides the main FastAPI application with:
 - Router inclusion for upload and results routes
 """
 
+import os
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -36,10 +37,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware for development
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
+_allowed_origins: list[str] = (
+    [o.strip() for o in _raw_origins.split(",") if o.strip()]
+    if _raw_origins
+    else ["*"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

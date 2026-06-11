@@ -20,11 +20,15 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 - [x] **Phase 2: CLI Tool + Insights** - Command-line interface validates core library, visualization and pattern detection
 - [x] **Phase 3: Web Interface + Reports** - Browser-based upload with interactive dashboard and AGP report export
 
-### v2.0 (Current)
+### v2.0 (Complete)
 
 - [x] **Phase 4: Behavioral Pattern Analysis** - Users see time-bucketed patterns with cross-day consistency
 - [x] **Phase 5: Sleep Analysis** - Users understand overnight glucose behavior
 - [x] **Phase 6: Anomaly Detection** - Users identify unusual glucose deviations
+
+### v3.0 (Current)
+
+- [ ] **Phase 7: Render Deployment** - App is publicly accessible on Render with correct module paths, clean dependencies, and production-ready CORS
 
 ---
 
@@ -179,6 +183,7 @@ Plans:
 | 4. Behavioral Pattern Analysis | 4/4 | Complete | 04-01, 04-02, 04-03, 04-04 |
 | 5. Sleep Analysis | 4/4 | Complete | 05-01, 05-02, 05-03, 05-04 |
 | 6. Anomaly Detection | 4/4 | Complete | 06-01, 06-02, 06-03, 06-04 |
+| 7. Render Deployment | 0/1 | Not started | — |
 
 ---
 
