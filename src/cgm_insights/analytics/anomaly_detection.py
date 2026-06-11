@@ -177,8 +177,11 @@ def _detect_pisa_artifact(
             # Flag readings from drop start through nadir as artifacts.
             for idx in range(i, nadir_idx + 1):
                 mask[idx] = True
-
-        i += 1
+            # Skip past the nadir so its readings aren't used as reference
+            # for the next iteration, preventing spurious secondary PISA detections.
+            i = nadir_idx + 1
+        else:
+            i += 1
 
     return mask
 
@@ -380,14 +383,14 @@ def _build_weekly_summaries(anomaly_df: pl.DataFrame) -> list[WeeklySummary]:
                 )
                 .group_by("period_hour")
                 .agg(pl.len().alias("count"))
-                .sort("count", descending=True)
+                .sort(["count", "period_hour"], descending=[True, False])
             )
             top_period_hour = int(period_df["period_hour"][0])
             most_affected_period = _format_period_label(top_period_hour)
 
         # Build week label from the Monday of the ISO week.
         monday = dt.date.fromisocalendar(year, iso_week, 1)
-        week_label = monday.strftime("Week of %b %-d")
+        week_label = f"Week of {monday.strftime('%b')} {monday.day}"
 
         summaries.append(WeeklySummary(
             iso_week=iso_week,
