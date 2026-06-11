@@ -155,37 +155,44 @@ def _get_subset(df: pl.DataFrame, bucket_start: int, window_min: int) -> pl.Data
 def _daily_stats(
     subset: pl.DataFrame,
     day_type_filter: Optional[str] = None,
+    min_days: int = MIN_DAYS_FOR_CONSISTENCY,
 ) -> tuple[Optional[float], int]:
     """Compute average glucose and day count for a reading subset.
 
     Args:
         subset: DataFrame subset with 'glucose', 'date', and 'day_type' columns.
         day_type_filter: If set, restrict to 'weekday' or 'weekend' rows only.
+        min_days: Minimum distinct days required before returning an average.
 
     Returns:
         Tuple of (avg_glucose, days_count). avg_glucose is None when fewer
-        than MIN_DAYS_FOR_CONSISTENCY distinct days are present.
+        than min_days distinct days are present.
     """
-    if day_type_filter:
+    if day_type_filter is not None:
         subset = subset.filter(pl.col("day_type") == day_type_filter)
     if subset.height == 0:
         return None, 0
     daily = subset.group_by("date").agg(pl.col("glucose").mean().alias("daily_mean"))
-    if daily.height < MIN_DAYS_FOR_CONSISTENCY:
+    if daily.height < min_days:
         return None, daily.height
     avg = daily["daily_mean"].mean()
     return avg, daily.height
 
 
-def _compute_all_buckets(df: pl.DataFrame, window_min: int) -> list[dict]:
+def _compute_all_buckets(
+    df: pl.DataFrame,
+    window_min: int,
+    min_days: int = MIN_DAYS_FOR_CONSISTENCY,
+) -> list[dict]:
     """Compute per-bucket statistics for one window size.
 
     Iterates over all 288 possible 5-minute bucket starts (0 to 1435),
-    skipping buckets with fewer than MIN_DAYS_FOR_CONSISTENCY distinct days.
+    skipping buckets with fewer than min_days distinct days.
 
     Args:
         df: Full DataFrame with 'mod', 'date', 'day_type', and 'glucose' columns.
         window_min: Window size in minutes.
+        min_days: Minimum distinct days required for a bucket to be included.
 
     Returns:
         List of dicts containing raw bucket statistics (no consistency labels yet).
@@ -205,13 +212,13 @@ def _compute_all_buckets(df: pl.DataFrame, window_min: int) -> list[dict]:
             )
             .filter(pl.col("count") >= 1)
         )
-        if daily.height < MIN_DAYS_FOR_CONSISTENCY:
+        if daily.height < min_days:
             continue
         avg_g = daily["daily_mean"].mean()
         std_g = daily["daily_mean"].std()
         cv = (std_g / avg_g * 100) if avg_g and avg_g > 0 else 0.0
-        weekday_avg, _ = _daily_stats(subset, "weekday")
-        weekend_avg, _ = _daily_stats(subset, "weekend")
+        weekday_avg, _ = _daily_stats(subset, "weekday", min_days)
+        weekend_avg, _ = _daily_stats(subset, "weekend", min_days)
         results.append(
             {
                 "bucket_start": bs,
@@ -298,7 +305,7 @@ def analyze_behavioral_patterns(
         )
     all_patterns: list[BehavioralPattern] = []
     for window_min in window_sizes:
-        raw_buckets = _compute_all_buckets(df, window_min)
+        raw_buckets = _compute_all_buckets(df, window_min, min_days)
         labeled = _apply_consistency_labels(raw_buckets)
         for b in labeled:
             pattern = BehavioralPattern(

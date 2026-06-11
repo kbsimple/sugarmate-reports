@@ -203,6 +203,8 @@ def _run_analysis(
                 _render_behavioral_patterns(behavioral_result, console)
         except Exception as e:
             console.print(f"\n[yellow]Could not generate behavioral patterns: {e}[/yellow]")
+    elif behavioral and not readings:
+        console.print("\n[yellow]Behavioral patterns require data. No readings available.[/yellow]")
 
     console.print(f"\n[dim]Note: {GMI_CAVEAT}[/dim]")
 

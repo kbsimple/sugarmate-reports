@@ -76,36 +76,6 @@ Parameters:
             {% endfor %}
         </div>
 
-        {# Pattern Insights sub-section — only shown when notable patterns exist #}
-        {% set notable = all_patterns | selectattr("consistency_label", "in", ["Consistent", "Variable"]) | list %}
-        {% if notable %}
-        <h4 class="font-bold text-md mt-4 mb-2">Pattern Insights</h4>
-        <div class="space-y-2">
-            {% for pattern in notable[:6] %}
-            <div class="bg-base-200 rounded-lg p-4">
-                <div class="flex items-start gap-2">
-                    {% if pattern.consistency_label == "Consistent" %}
-                    <span class="badge badge-info">timing</span>
-                    {% else %}
-                    <span class="badge badge-secondary">variability</span>
-                    {% endif %}
-                    <div class="flex-1">
-                        {% if pattern.consistency_label == "Consistent" %}
-                        <h5 class="font-medium">Consistent period detected</h5>
-                        <p class="text-sm text-base-content/70 mt-1">Your glucose during {{ pattern.bucket_label }} is particularly consistent across days.</p>
-                        <p class="text-sm mt-2">Consider: This period may be a useful anchor for your routine — consider noting what contributes to this consistency.</p>
-                        {% else %}
-                        <h5 class="font-medium">Variable period detected</h5>
-                        <p class="text-sm text-base-content/70 mt-1">Your glucose during {{ pattern.bucket_label }} tends to vary more across days.</p>
-                        <p class="text-sm mt-2">Consider: Explore what differs on days when this period looks higher or lower.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
         {% endif %}{# end if not insufficient_data #}
 
         {# Wellness disclaimer — always shown #}

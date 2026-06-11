@@ -275,28 +275,32 @@ def generate_behavioral_suggestions(
             wellness_disclaimer=True,
         ))
 
-    # Weekday/weekend diff: only for patterns where both averages exist and differ > 10 mg/dL
-    for pattern in behavioral_result.patterns:
-        if (
-            pattern.weekday_avg_glucose is not None
-            and pattern.weekend_avg_glucose is not None
-            and abs(pattern.weekday_avg_glucose - pattern.weekend_avg_glucose) > 10.0
-        ):
-            template = SUGGESTION_TEMPLATES["behavioral_weekday_weekend_diff"]
-            suggestions.append(Suggestion(
-                category=template["category"],
-                pattern_reference=f"Weekday/weekend diff: {pattern.bucket_label}",
-                title=template["title"],
-                description=template["description"].format(
-                    bucket_label=pattern.bucket_label,
-                    weekday_avg=pattern.weekday_avg_glucose,
-                    weekend_avg=pattern.weekend_avg_glucose,
-                ),
-                action=template["action"],
-                priority=template["priority"],
-                wellness_disclaimer=True,
-            ))
-            break  # One weekday/weekend diff suggestion is enough
+    # Weekday/weekend diff: pick the single bucket with the largest abs diff > 10 mg/dL
+    best_diff_pattern = max(
+        (
+            p for p in behavioral_result.patterns
+            if p.weekday_avg_glucose is not None
+            and p.weekend_avg_glucose is not None
+            and abs(p.weekday_avg_glucose - p.weekend_avg_glucose) > 10.0
+        ),
+        key=lambda p: abs(p.weekday_avg_glucose - p.weekend_avg_glucose),
+        default=None,
+    )
+    if best_diff_pattern is not None:
+        template = SUGGESTION_TEMPLATES["behavioral_weekday_weekend_diff"]
+        suggestions.append(Suggestion(
+            category=template["category"],
+            pattern_reference=f"Weekday/weekend diff: {best_diff_pattern.bucket_label}",
+            title=template["title"],
+            description=template["description"].format(
+                bucket_label=best_diff_pattern.bucket_label,
+                weekday_avg=best_diff_pattern.weekday_avg_glucose,
+                weekend_avg=best_diff_pattern.weekend_avg_glucose,
+            ),
+            action=template["action"],
+            priority=template["priority"],
+            wellness_disclaimer=True,
+        ))
 
     suggestions.sort(key=lambda s: s.priority)
     return suggestions

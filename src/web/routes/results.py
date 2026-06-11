@@ -9,7 +9,8 @@ from fastapi.templating import Jinja2Templates
 
 from ..services.session import session_store
 from cgm_insights import format_results, format_quality_flags
-from cgm_insights.output.suggestions import generate_suggestions
+from cgm_insights.analytics.behavioral_patterns import BehavioralAnalysisResult
+from cgm_insights.output.suggestions import generate_suggestions, generate_behavioral_suggestions
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/web/templates")
@@ -52,6 +53,12 @@ async def get_results(request: Request, session_id: str):
 
     # Generate suggestions from patterns
     suggestions = generate_suggestions(patterns, results)
+
+    # Add behavioral suggestions if analysis succeeded
+    if behavioral_patterns_data and not behavioral_patterns_data.get("insufficient_data", True):
+        behavioral_result = BehavioralAnalysisResult.model_validate(behavioral_patterns_data)
+        suggestions = suggestions + generate_behavioral_suggestions(behavioral_result)
+        suggestions.sort(key=lambda s: s.priority)
 
     # Format patterns for template
     formatted_patterns = [
@@ -141,4 +148,5 @@ async def get_results_data(session_id: str):
             for p in session_data.patterns
         ],
         "glucose_readings": session_data.raw_readings,
+        "behavioral_patterns": session_data.behavioral_patterns,
     }
