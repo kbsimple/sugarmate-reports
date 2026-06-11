@@ -148,12 +148,15 @@ def _compute_metrics(overnight_df: pl.DataFrame) -> dict:
 
     nights_with_data = per_night.height
     mean_glucose = per_night["daily_mean"].mean()
-    total_readings = per_night["count"].sum()
-    tir_count = per_night["tir_count"].sum()
-    tbr_count = per_night["tbr_count"].sum()
 
-    tir_pct = (tir_count / total_readings * 100) if total_readings > 0 else 0.0
-    tbr_pct = (tbr_count / total_readings * 100) if total_readings > 0 else 0.0
+    # Compute per-night TIR/TBR fractions, then average across nights — consistent
+    # with how mean_glucose weights every night equally regardless of reading count.
+    per_night = per_night.with_columns(
+        (pl.col("tir_count") / pl.col("count") * 100).alias("tir_pct_night"),
+        (pl.col("tbr_count") / pl.col("count") * 100).alias("tbr_pct_night"),
+    )
+    tir_pct = per_night["tir_pct_night"].mean() or 0.0
+    tbr_pct = per_night["tbr_pct_night"].mean() or 0.0
 
     # CV of daily overnight means (cross-night variability, NOT intra-night CV)
     std_g = per_night["daily_mean"].std()
@@ -181,9 +184,12 @@ def _compute_metrics(overnight_df: pl.DataFrame) -> dict:
         if nights.height < MIN_NIGHTS_FOR_SPLIT:
             return None, None
         mean_g = nights["daily_mean"].mean()
-        total = nights["count"].sum()
-        tir = nights["tir_count"].sum()
-        tir_p = (tir / total * 100) if total > 0 else 0.0
+        # Use per-night TIR fractions averaged across nights — same equal-night
+        # weighting as mean_g above (consistent with _compute_metrics top-level).
+        nights = nights.with_columns(
+            (pl.col("tir_count") / pl.col("count") * 100).alias("tir_pct_night")
+        )
+        tir_p = nights["tir_pct_night"].mean() or 0.0
         return mean_g, tir_p
 
     weekday_mean, weekday_tir = _split_stats(weekday_nights)
