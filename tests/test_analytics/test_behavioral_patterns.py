@@ -156,10 +156,22 @@ def test_apply_consistency_labels_assigns_quartiles():
 # --- Test 8: weekday_avg_glucose is None when fewer than 5 weekdays have data ---
 
 def test_weekday_avg_none_when_insufficient_weekday_data():
-    """5 consecutive Saturdays only — weekday_avg_glucose should be None for all patterns."""
-    # 2024-01-06 is a Saturday; 5 consecutive Saturdays = 5 weekend days, 0 weekdays
+    """5 Saturdays spaced 7 days apart — weekday_avg_glucose should be None for all patterns.
+
+    Creates exactly 5 weekend days (Saturdays) and 0 weekdays, so weekday_avg_glucose
+    must be None due to insufficient weekday data (below min_days=5 threshold).
+    """
+    # 2024-01-06 is a Saturday; step 7 days to stay on Saturdays
     saturday = datetime(2024, 1, 6, 0, 0)
-    readings = create_readings_for_n_days(5, start_date=saturday)
+    readings = []
+    for week in range(5):
+        day_start = saturday + timedelta(weeks=week)
+        for minute in range(0, 1440, 5):
+            readings.append(CGMReading(
+                timestamp=day_start + timedelta(minutes=minute),
+                glucose_mg_dl=100.0,
+                source="test",
+            ))
     result = analyze_behavioral_patterns(readings, min_days=5)
     if result.patterns:
         for pattern in result.patterns[:5]:
@@ -222,3 +234,21 @@ def test_saturday_classified_as_weekend():
     assert day_types[1] == "weekday", (
         f"Monday should be weekday, got {day_types[1]}"
     )
+
+
+# --- Test 12: BehavioralPattern is immutable (frozen=True) ---
+
+def test_behavioral_pattern_is_immutable():
+    """BehavioralPattern must reject field assignment (frozen=True)."""
+    pattern = BehavioralPattern(
+        window_size_min=30,
+        bucket_start_minute=720,
+        bucket_label="12:00–12:30",
+        consistency_label=ConsistencyLabel.CONSISTENT,
+        cv_score=5.0,
+        avg_glucose=120.0,
+        days_with_data=5,
+        reading_count=50,
+    )
+    with pytest.raises(Exception):  # ValidationError from Pydantic frozen model
+        pattern.avg_glucose = 999.0
