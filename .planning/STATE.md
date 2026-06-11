@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
 status: in_progress
-last_updated: "2026-06-11T00:00:00Z"
+last_updated: "2026-06-11T00:15:00Z"
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 33
+  total_plans: 5
+  completed_plans: 5
+  percent: 38
 ---
 
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 4 complete, Phase 5 ready for planning
+**Status:** Phase 5 in progress — Plan 05-01 complete
 
 ---
 
@@ -32,9 +32,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | Phase 5: Sleep Analysis |
-| Plan | — |
-| Status | Ready for planning |
-| Progress | `████░░░░░░░░` 33% (1/3 phases) |
+| Plan | 01 (complete) |
+| Status | In progress |
+| Progress | `█████░░░░░░░` 38% (Plan 5/13 complete) |
 
 ---
 
@@ -55,7 +55,7 @@ progress:
 | Phase | Status | Plans |
 |-------|--------|-------|
 | 4. Behavioral Pattern Analysis | Complete | 4/4 |
-| 5. Sleep Analysis | Not started | 0/0 |
+| 5. Sleep Analysis | In progress | 1/? |
 | 6. Anomaly Detection | Not started | 0/0 |
 
 **Scope:** 17 requirements across 3 phases
@@ -126,6 +126,9 @@ progress:
 | 2026-06-10 | Behavioral patterns first (Phase 4) | Establishes time-bucketed analysis foundation; provides baseline for anomaly detection |
 | 2026-06-10 | Sleep analysis second (Phase 5) | Builds on time-bucketing from Phase 4; focused overnight window analysis |
 | 2026-06-10 | Anomaly detection last (Phase 6) | Depends on behavioral baselines from Phase 4; uses overnight context from Phase 5 |
+| 2026-06-11 | CV computed as std-of-daily-overnight-means / mean * 100 | Cross-night variability metric, not intra-night; matches behavioral_patterns approach |
+| 2026-06-11 | night_date maps post-midnight readings back one day | Ensures overnight readings belong to the EVENING they started, not calendar morning |
+| 2026-06-11 | Excursions aggregated to night-level counts | Avoids clinical alert framing; sustained_low_nights/sustained_high_nights/total_excursion_nights |
 
 ### Active Constraints
 
@@ -140,9 +143,11 @@ progress:
 
 **Entry Point:** v2.0 roadmap created
 
-**Next Action:** `/gsd-plan-phase 5` to create execution plan for Sleep Analysis
+**Next Action:** Continue Phase 5 execution (Plans 05-02 through 05-04)
 
 **Session (2026-06-11):** Phase 4 complete — 4 plans executed (sliding-window behavioral analysis, public API wiring, web integration, CLI flag + tests). 221 tests passing. 6 code review findings fixed (dead suggestion integration, midnight-bucket suggestion selection, min_days threading, /data endpoint, CLI warning gap, empty-string guard).
+
+**Session (2026-06-11):** Phase 5 Plan 01 complete — overnight_patterns.py created with OvernightAnalysisResult model, _get_overnight_df, _compute_metrics, _detect_excursions, and analyze_overnight_patterns. All 221 existing tests pass. Commit af09e2b.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
