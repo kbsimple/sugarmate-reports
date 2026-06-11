@@ -448,10 +448,14 @@ def analyze_anomalies(
     baselines = _compute_bucket_baselines(df_clean)
 
     if baselines.height == 0:
+        # No buckets with non-zero std (e.g. perfectly uniform data).
+        # Data is sufficient (days_analyzed >= min_days), but there is no
+        # variance to detect anomalies against — return 0 anomalies, not
+        # insufficient_data, so callers know analysis ran successfully.
         return AnomalyDetectionResult(
             days_analyzed=days_analyzed,
             pisa_artifacts_filtered=pisa_count,
-            insufficient_data=True,
+            insufficient_data=False,
         )
 
     # Step 3: Join and compute SD deviation per reading

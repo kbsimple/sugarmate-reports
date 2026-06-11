@@ -42,6 +42,7 @@ from cgm_insights.analytics.behavioral_patterns import (
     ConsistencyLabel,
 )
 from cgm_insights.analytics.overnight_patterns import analyze_overnight_patterns
+from cgm_insights.analytics.anomaly_detection import analyze_anomalies
 from cgm_insights.output.suggestions import (
     generate_suggestions,
     format_suggestions_rich,
@@ -176,6 +177,80 @@ def _render_overnight_patterns(
     console.print(f"\n[dim]Window: {result.window_label}[/dim]")
 
 
+def _render_anomaly_detection(
+    result,
+    console: Console,
+) -> None:
+    """Render anomaly detection summary as Rich output.
+
+    Shows weekly summary counts using badge-style text styling.
+    Never uses "alert", "alarm", "abnormal", or clinical diagnosis terms.
+
+    Args:
+        result: AnomalyDetectionResult from analyze_anomalies().
+        console: Rich Console for output.
+    """
+    from rich.table import Table
+
+    console.print("\n[bold cyan]Unusual Glucose Patterns[/bold cyan]")
+    console.print(
+        f"[dim]({result.days_analyzed} days analyzed, "
+        f"{result.total_anomalies} unusual readings detected)[/dim]\n"
+    )
+
+    if result.total_anomalies == 0:
+        console.print("[dim]No unusual patterns detected in your data.[/dim]")
+        return
+
+    table = Table(
+        title="Unusual Pattern Summary",
+        show_header=True,
+        header_style="bold",
+    )
+    table.add_column("Tier", style="white", width=16)
+    table.add_column("Count", style="cyan", width=10)
+    table.add_column("Description", style="dim", width=30)
+
+    if result.severe_total > 0:
+        table.add_row(
+            "[red]Significant[/red]",
+            str(result.severe_total),
+            "4x+ from personal baseline",
+        )
+    if result.moderate_total > 0:
+        table.add_row(
+            "[yellow]Moderate[/yellow]",
+            str(result.moderate_total),
+            "3-4x from personal baseline",
+        )
+    if result.mild_total > 0:
+        table.add_row(
+            "[blue]Mild[/blue]",
+            str(result.mild_total),
+            "2-3x from personal baseline",
+        )
+    console.print(table)
+
+    if result.pisa_artifacts_filtered > 0:
+        console.print(
+            f"\n[dim]{result.pisa_artifacts_filtered} sensor artifact "
+            f"reading(s) excluded from analysis.[/dim]"
+        )
+
+    if result.weekly_summaries:
+        console.print("\n[bold]Weekly Breakdown:[/bold]")
+        for week in result.weekly_summaries[:4]:
+            parts = []
+            if week.severe_count:
+                parts.append(f"[red]{week.severe_count} significant[/red]")
+            if week.moderate_count:
+                parts.append(f"[yellow]{week.moderate_count} moderate[/yellow]")
+            if week.mild_count:
+                parts.append(f"[blue]{week.mild_count} mild[/blue]")
+            summary = ", ".join(parts) if parts else "none"
+            console.print(f"  {week.week_label}: {summary}")
+
+
 def _run_analysis(
     file_path: Path,
     start_date: Optional[str],
@@ -186,6 +261,7 @@ def _run_analysis(
     insights: bool,
     behavioral: bool,
     overnight: bool,
+    anomaly: bool,
     console: Console,
 ) -> None:
     """Run analysis on a local file and print results to console."""
@@ -200,7 +276,7 @@ def _run_analysis(
     )
 
     readings = None
-    if visualize or compare or insights or behavioral or overnight:
+    if visualize or compare or insights or behavioral or overnight or anomaly:
         parser = get_parser(str(file_path))
         readings = parser.parse(str(file_path), start_date=start, end_date=end)
         if exclude_warmup and readings:
@@ -293,6 +369,26 @@ def _run_analysis(
             "\n[yellow]Overnight patterns require data. No readings available.[/yellow]"
         )
 
+    if anomaly and readings:
+        try:
+            anomaly_result = analyze_anomalies(readings)
+            if anomaly_result.insufficient_data:
+                console.print(
+                    "\n[yellow]Unusual pattern detection requires at least 5 days "
+                    "of data to establish a personal baseline.[/yellow]"
+                )
+            else:
+                _render_anomaly_detection(anomaly_result, console)
+        except Exception as e:
+            console.print(
+                f"\n[yellow]Could not generate unusual pattern analysis: {e}[/yellow]"
+            )
+    elif anomaly and not readings:
+        console.print(
+            "\n[yellow]Unusual pattern detection requires data. "
+            "No readings available.[/yellow]"
+        )
+
     console.print(f"\n[dim]Note: {GMI_CAVEAT}[/dim]")
 
 
@@ -334,6 +430,11 @@ def analyze(
         "--overnight/--no-overnight",
         help="Show overnight glucose patterns (10pm–6am window)",
     ),
+    anomaly: bool = typer.Option(
+        True,
+        "--anomaly/--no-anomaly",
+        help="Show unusual glucose pattern detection summary",
+    ),
 ) -> None:
     """Analyze CGM data from a local file and display metrics.
 
@@ -344,7 +445,7 @@ def analyze(
     """
     console = Console()
     try:
-        _run_analysis(file_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, overnight, console)
+        _run_analysis(file_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, overnight, anomaly, console)
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
@@ -384,6 +485,11 @@ def download_and_analyze(
         "--overnight/--no-overnight",
         help="Show overnight glucose patterns (10pm–6am window)",
     ),
+    anomaly: bool = typer.Option(
+        True,
+        "--anomaly/--no-anomaly",
+        help="Show unusual glucose pattern detection summary",
+    ),
 ) -> None:
     """Download a CGM data file from a URL and analyze it.
 
@@ -410,7 +516,7 @@ def download_and_analyze(
             tmp_path = raw_path.with_name(raw_path.name + suffix)
             raw_path.rename(tmp_path)
             console.print("[green]Download complete.[/green]\n")
-            _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, overnight, console)
+            _run_analysis(tmp_path, start_date, end_date, exclude_warmup, visualize, compare, insights, behavioral, overnight, anomaly, console)
         finally:
             tmp_path.unlink(missing_ok=True)
 
