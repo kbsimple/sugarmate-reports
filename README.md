@@ -1,136 +1,135 @@
 # CGM Insights
 
-A Python tool for analyzing Continuous Glucose Monitor (CGM) data and generating actionable wellness insights.
+Analyze your Continuous Glucose Monitor data and understand your glucose patterns. Upload a Sugarmate CSV export and get time-in-range metrics, behavioral patterns, overnight analysis, and unusual reading detection — all in wellness language, no medical advice.
 
-## Overview
+Available as a CLI tool, Python library, and web dashboard.
 
-Upload your CGM data and get:
-
-- **Time-in-Range metrics** — Percentage breakdown across glucose bands (very low, low, target, high, very high)
-- **Glucose statistics** — Average glucose, standard deviation, GMI (Glucose Management Indicator)
-- **Pattern detection** — Time-of-day and day-of-week glucose patterns
-- **Wellness suggestions** — Actionable insights using wellness language (no medical advice)
-- **AGP reports** — Export Ambulatory Glucose Profile reports for healthcare sharing
+---
 
 ## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/kbsimple/sugarmate-reports.git
 cd sugarmate-reports
-
-# Create virtual environment and install
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-## Usage
+**Requires:** Python 3.10+, a [Sugarmate](https://sugarmate.io) CSV export.
 
-### Command Line Interface
+---
+
+## CLI
 
 ```bash
-# Basic analysis
-cgm-insights analyze data.csv
+# Full analysis (all features on by default)
+cgm-insights analyze readings.csv
 
-# With date range
-cgm-insights analyze data.csv --start 2024-01-01 --end 2024-01-31
+# Limit to a date range
+cgm-insights analyze readings.csv --start 2024-01-01 --end 2024-01-31
 
-# Compare with previous period
-cgm-insights analyze data.csv --compare
+# Compare current period against the previous one
+cgm-insights analyze readings.csv --compare
 
-# Exclude sensor warmup period (default: excluded)
-cgm-insights analyze data.csv --include-warmup
+# Download from a URL and analyze
+cgm-insights download-and-analyze https://example.com/readings.csv
 ```
 
-**Options:**
-- `--start DATE` — Start date filter (YYYY-MM-DD)
-- `--end DATE` — End date filter (YYYY-MM-DD)
-- `--viz/--no-viz` — Show trend visualization (default: on)
-- `--compare` — Compare with previous period of same duration
-- `--insights/--no-insights` — Show pattern insights (default: on)
-- `--exclude-warmup/--include-warmup` — Exclude sensor warmup period (default: exclude)
+**All flags** (each has a `--no-*` counterpart to disable):
 
-### Web Interface
+| Flag | What it shows |
+|------|--------------|
+| `--viz` | ASCII trend graph with color-coded zones |
+| `--compare` | Side-by-side comparison with prior period |
+| `--insights` | Time-of-day and day-of-week pattern highlights |
+| `--behavioral` | 30/60/120-min sliding-window consistency scores |
+| `--overnight` | 10pm–6am window metrics (mean, TIR, CV, stability) |
+| `--anomaly` | Unusual readings vs. personal baseline, by week |
+| `--exclude-warmup` | Drop first 2 hours of sensor data (default: on) |
+
+---
+
+## Web Interface
 
 ```bash
-# Start the web server
 uvicorn web.app:app --reload
-
-# Open browser to http://localhost:8000
+# Open http://localhost:8000
 ```
 
-The web interface provides:
-- Drag-and-drop file upload
-- Interactive dashboard with Chart.js visualizations
-- AGP report PDF export
+Upload a CSV, explore an interactive Chart.js dashboard, and download an AGP (Ambulatory Glucose Profile) PDF for your healthcare provider.
 
-### Python Library
+---
+
+## Python Library
 
 ```python
-from cgm_insights import analyze_file, format_summary
+from cgm_insights import (
+    analyze_file,
+    analyze_behavioral_patterns,
+    analyze_overnight_patterns,
+    analyze_anomalies,
+)
 
-# Run analysis
-results = analyze_file("data.csv")
-
-# Access metrics
+results = analyze_file("readings.csv")
 print(f"Time in Range: {results.time_in_range.target_pct:.1f}%")
 print(f"Average Glucose: {results.avg_glucose:.0f} mg/dL")
 print(f"GMI: {results.gmi:.1f}%")
 
-# Format output
-summary = format_summary(results)
-print(summary)
+behavioral = analyze_behavioral_patterns(results.readings)
+overnight  = analyze_overnight_patterns(results.readings)
+anomalies  = analyze_anomalies(results.readings)
 ```
 
-## Supported Data Formats
+---
 
-- **Sugarmate CSV exports** — Standard format from the Sugarmate app
+## Features
 
-## Project Structure
+**Core metrics**
+- Time-in-Range across five glucose bands (very low / low / target / high / very high)
+- Average glucose, standard deviation, GMI with accuracy caveat
+- Data completeness percentage and gap detection
 
-```
-src/
-├── cgm_insights/        # Core analysis library
-│   ├── ingestion/       # Data parsing and validation
-│   ├── analytics/       # Metrics and pattern detection
-│   ├── output/          # Visualization and suggestions
-│   └── cli.py           # CLI entry point
-└── web/                 # FastAPI web interface
-    ├── routes/          # API endpoints
-    ├── services/        # Business logic
-    ├── templates/       # Jinja2 templates
-    └── static/          # CSS and JavaScript
-```
+**Behavioral patterns** *(v2.0)*
+- Sliding-window analysis at 30, 60, and 120-minute granularities
+- Weekday vs. weekend segmentation for every time period
+- Cross-day consistency scores — surface your most and least predictable windows
+
+**Overnight analysis** *(v2.0)*
+- Dedicated 10pm–6am window with mean glucose, TIR, CV, and time below range
+- Overnight stability score (higher = more consistent night-to-night)
+- Weekday vs. weekend overnight comparison
+- Sustained excursion detection (≥3 consecutive readings outside threshold)
+
+**Unusual pattern detection** *(v2.0)*
+- Personal baseline built from your own time-of-day/day-of-week history
+- PISA artifact filtering (pressure-induced sensor drops removed before analysis)
+- Severity tiers: mild (2–3×), moderate (3–4×), significant (4×+) from baseline
+- Weekly aggregate summaries — no individual reading alerts
+
+**Reports**
+- AGP PDF export with glucose profile, daily glucose, and data statistics
+- All insights use wellness language — no medical advice, no treatment suggestions
+
+---
 
 ## Development
 
 ```bash
 # Run tests
-pytest
+.venv/bin/python -m pytest
 
-# Run tests with coverage
-pytest --cov=src --cov-report=html
+# Run with coverage
+.venv/bin/python -m pytest --cov=src --cov-report=html
 
-# Lint code
-ruff check src tests
+# Type check
+.venv/bin/python -m mypy src
 ```
 
-## Technology Stack
+**Stack:** Polars · Pydantic v2 · Typer + Rich · FastAPI + HTMX · Chart.js · ReportLab
 
-- **Python 3.10+** — Core language
-- **Polars** — High-performance data processing
-- **GlucoStats** — Validated CGM metrics calculations
-- **Pydantic** — Data validation
-- **Typer + Rich** — CLI with beautiful terminal output
-- **FastAPI + HTMX** — Web interface
-- **Chart.js** — Interactive visualizations
-- **ReportLab** — PDF report generation
+---
 
 ## Disclaimer
 
 This tool provides wellness insights and pattern analysis only. It does not provide medical advice, insulin recommendations, or treatment suggestions. Always consult your healthcare provider for medical decisions.
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
