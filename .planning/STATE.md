@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
-status: in_progress
-last_updated: "2026-06-11T23:00:00Z"
+status: complete
+last_updated: "2026-06-11T23:59:00Z"
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
-  percent: 67
+  completed_phases: 3
+  total_plans: 12
+  completed_plans: 12
+  percent: 100
 ---
 
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 6 complete — All 4 plans (06-01, 06-02, 06-03, 06-04) complete
+**Status:** v2.0 MILESTONE COMPLETE — All 3 phases (4, 5, 6) and 12 plans done
 
 ---
 
@@ -165,6 +165,8 @@ progress:
 **Session (2026-06-11):** Phase 6 Plan 04 complete — --anomaly/--no-anomaly CLI flag added to analyze and download_and_analyze commands; _render_anomaly_detection() Rich table renderer added; 9-test anomaly_detection test suite created. Rule 1 fix: baselines.height==0 with sufficient days now returns insufficient_data=False. 240 tests pass. Commit e5febf8.
 
 **Session (2026-06-11):** Phase 6 Plan 03 complete — anomaly detection wired into web layer: SessionData field, upload.py call, results.py extraction + suggestion merge, /data JSON endpoint, results.html include, anomaly_detection.html DaisyUI component. 240 tests pass. No forbidden wellness terms in user-facing output. Commit be62810. Phase 6 now fully complete (4/4 plans).
+
+**Session (2026-06-11):** v2.0 MILESTONE COMPLETE — Phase 6 code review fixed WR-01 (PISA loop advancement: i=nadir_idx+1 after flagging), IN-01 (strftime portability: f-string day), IN-02 (deterministic period sort). ANLY-02–06 all verified ✓. 240 tests pass. All 3 v2.0 phases (4: Behavioral, 5: Overnight, 6: Anomaly) complete. Commit 36613a1.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
