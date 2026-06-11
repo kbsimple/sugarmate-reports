@@ -216,7 +216,10 @@ def _compute_all_buckets(
             continue
         avg_g = daily["daily_mean"].mean()
         std_g = daily["daily_mean"].std()
-        cv = (std_g / avg_g * 100) if avg_g and avg_g > 0 else 0.0
+        if std_g is None or avg_g is None or avg_g <= 0:
+            cv = 0.0
+        else:
+            cv = std_g / avg_g * 100
         weekday_avg, _ = _daily_stats(subset, "weekday", min_days)
         weekend_avg, _ = _daily_stats(subset, "weekend", min_days)
         results.append(
