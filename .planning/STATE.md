@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Pattern Analysis Release
 status: in_progress
-last_updated: "2026-06-11T22:00:00Z"
+last_updated: "2026-06-11T22:30:00Z"
 progress:
   total_phases: 3
   completed_phases: 2
@@ -15,7 +15,7 @@ progress:
 # STATE.md: CGM Insights
 
 **Last Updated:** 2026-06-11
-**Status:** Phase 6 in progress — Plan 06-02 complete
+**Status:** Phase 6 in progress — Plans 06-01, 06-02, 06-04 complete
 
 ---
 
@@ -32,9 +32,9 @@ progress:
 | Field | Value |
 |-------|-------|
 | Phase | Phase 6: Anomaly Detection |
-| Plan | 06-02 complete |
+| Plan | 06-04 complete |
 | Status | In progress |
-| Progress | `████████░░░░` 67% (2/3 phases, 2/4 plans in Phase 6) |
+| Progress | `████████░░░░` 67% (2/3 phases, 3/4 plans in Phase 6) |
 
 ---
 
@@ -56,7 +56,7 @@ progress:
 |-------|--------|-------|
 | 4. Behavioral Pattern Analysis | Complete | 4/4 |
 | 5. Sleep Analysis | Complete | 4/4 |
-| 6. Anomaly Detection | In progress | 2/4 |
+| 6. Anomaly Detection | In progress | 3/4 |
 
 **Scope:** 17 requirements across 3 phases
 
@@ -129,6 +129,7 @@ progress:
 | 2026-06-11 | CV computed as std-of-daily-overnight-means / mean * 100 | Cross-night variability metric, not intra-night; matches behavioral_patterns approach |
 | 2026-06-11 | night_date maps post-midnight readings back one day | Ensures overnight readings belong to the EVENING they started, not calendar morning |
 | 2026-06-11 | Excursions aggregated to night-level counts | Avoids clinical alert framing; sustained_low_nights/sustained_high_nights/total_excursion_nights |
+| 2026-06-11 | baselines.height==0 returns insufficient_data=False | Uniform data has no variance to detect against, but analysis ran successfully with sufficient days |
 
 ### Active Constraints
 
@@ -143,7 +144,7 @@ progress:
 
 **Entry Point:** v2.0 roadmap created
 
-**Next Action:** `/gsd-execute-phase` to execute Plan 06-03
+**Next Action:** `/gsd-execute-phase` to execute Plan 06-03 (web integration)
 
 **Session (2026-06-11):** Phase 4 complete — 4 plans executed (sliding-window behavioral analysis, public API wiring, web integration, CLI flag + tests). 221 tests passing. 6 code review findings fixed (dead suggestion integration, midnight-bucket suggestion selection, min_days threading, /data endpoint, CLI warning gap, empty-string guard).
 
@@ -160,6 +161,8 @@ progress:
 **Session (2026-06-11):** Phase 6 Plan 01 complete — anomaly_detection.py created with PISA artifact filter (per-day drop/recovery signature), two-step Polars bucket baseline (_compute_bucket_baselines), severity classifier (2/3/4 SD), weekly summary builder (_build_weekly_summaries), and analyze_anomalies() public entry. All 231 existing tests pass. Commit 6f166ce.
 
 **Session (2026-06-11):** Phase 6 Plan 02 complete — analyze_anomalies and AnomalyDetectionResult wired into analytics/__init__ and cgm_insights/__init__ public APIs; generate_anomaly_suggestions() added with 3 severity-tiered wellness-language templates. At-most-one-suggestion design selects highest severity tier. All 231 tests pass. Commit 8dfa4e0.
+
+**Session (2026-06-11):** Phase 6 Plan 04 complete — --anomaly/--no-anomaly CLI flag added to analyze and download_and_analyze commands; _render_anomaly_detection() Rich table renderer added; 9-test anomaly_detection test suite created. Rule 1 fix: baselines.height==0 with sufficient days now returns insufficient_data=False. 240 tests pass. Commit e5febf8.
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
