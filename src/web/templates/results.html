@@ -98,6 +98,13 @@
         {% include 'components/daily_patterns.html' %}
     </div>
 
+    <!-- Out-of-Range Priority Insights (Phase 8) -->
+    <div class="mb-6">
+        {% with behavioral_patterns=behavioral_patterns %}
+        {% include 'components/out_of_range_insights.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Behavioral Patterns (Phase 4) -->
     <div class="mb-6">
         {% with behavioral_patterns=behavioral_patterns %}
