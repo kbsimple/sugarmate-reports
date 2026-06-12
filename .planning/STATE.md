@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: UX Improvements
-status: ready_to_execute
-last_updated: "2026-06-11T00:00:00Z"
+status: phase_complete
+last_updated: "2026-06-12T00:00:00Z"
 progress:
   total_phases: 1
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
+  percent: 100
 current_phase: 8
 current_phase_name: Time-of-Day Chart & Patterns UX
 ---
 
 # STATE.md: CGM Insights
 
-**Last Updated:** 2026-06-11
-**Status:** v2.0 MILESTONE COMPLETE — All 3 phases (4, 5, 6) and 12 plans done
+**Last Updated:** 2026-06-12
+**Status:** v3.0 Phase 8 COMPLETE — ToD chart fix, behavioral patterns redesign, out-of-range insights, SC-5 gap closure
 
 ---
 
@@ -33,10 +33,10 @@ current_phase_name: Time-of-Day Chart & Patterns UX
 
 | Field | Value |
 |-------|-------|
-| Phase | Phase 6: Anomaly Detection |
-| Plan | 06-03 complete (all 4 plans done) |
+| Phase | Phase 8: Time-of-Day Chart & Patterns UX |
+| Plan | 08-04 complete (all 4 plans done) |
 | Status | Complete |
-| Progress | `████████████` 100% (3/3 v2.0 phases, 4/4 plans in Phase 6) |
+| Progress | `████████████` 100% (1/1 v3.0 phase, 4/4 plans in Phase 8) |
 
 ---
 
@@ -169,6 +169,8 @@ current_phase_name: Time-of-Day Chart & Patterns UX
 **Session (2026-06-11):** Phase 6 Plan 03 complete — anomaly detection wired into web layer: SessionData field, upload.py call, results.py extraction + suggestion merge, /data JSON endpoint, results.html include, anomaly_detection.html DaisyUI component. 240 tests pass. No forbidden wellness terms in user-facing output. Commit be62810. Phase 6 now fully complete (4/4 plans).
 
 **Session (2026-06-11):** v2.0 MILESTONE COMPLETE — Phase 6 code review fixed WR-01 (PISA loop advancement: i=nadir_idx+1 after flagging), IN-01 (strftime portability: f-string day), IN-02 (deterministic period sort). ANLY-02–06 all verified ✓. 240 tests pass. All 3 v2.0 phases (4: Behavioral, 5: Overnight, 6: Anomaly) complete. Commit 36613a1.
+
+**Session (2026-06-12):** Phase 8 complete — 4 plans executed (ToD chart const-patterns fix, behavioral_patterns.html accordion removal + inline range/consistency badges, out_of_range_insights.html component, pct_out_of_range gap closure SC-5). 252 tests passing. 1 warning + 3 info code review findings (advisory). 3 browser verification items saved to 08-HUMAN-UAT.md.
 
 ### Roadmap Evolution
 

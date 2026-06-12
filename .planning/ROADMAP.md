@@ -29,7 +29,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 ### v3.0 (Current)
 
 - [ ] **Phase 7: Render Deployment** - App is publicly accessible on Render with correct module paths, clean dependencies, and production-ready CORS
-- [ ] **Phase 8: Time-of-Day Chart & Patterns UX** - Fix blank Time-of-Day chart, redesign behavioral patterns with inline range status (no accordion, variability + range dimensions), elevate out-of-range time windows as actionable priority insights segmented by weekday/weekend
+- [x] **Phase 8: Time-of-Day Chart & Patterns UX** - Fix blank Time-of-Day chart, redesign behavioral patterns with inline range status (no accordion, variability + range dimensions), elevate out-of-range time windows as actionable priority insights segmented by weekday/weekend — Completed 2026-06-12
 
 ---
 
@@ -188,9 +188,10 @@ Plans:
 6. Wellness language maintained throughout; no medical advice
 
 **Plans:**
-- [ ] 08-01-PLAN.md — Fix Time-of-Day chart rendering bug and audit all chart JS
-- [ ] 08-02-PLAN.md — Behavioral patterns UX: inline range status, two-dimensional display, remove accordion
-- [ ] 08-03-PLAN.md — Elevate out-of-range insights: weekday/weekend segmentation, priority ordering, detail richness
+- [x] 08-01-PLAN.md — Fix Time-of-Day chart rendering bug and audit all chart JS
+- [x] 08-02-PLAN.md — Behavioral patterns UX: inline range status, two-dimensional display, remove accordion
+- [x] 08-03-PLAN.md — Elevate out-of-range insights: weekday/weekend segmentation, priority ordering, detail richness
+- [x] 08-04-PLAN.md — Gap closure SC-5: add pct_out_of_range to BehavioralPattern and render in insight cards
 
 ---
 
@@ -205,7 +206,7 @@ Plans:
 | 5. Sleep Analysis | 4/4 | Complete | 05-01, 05-02, 05-03, 05-04 |
 | 6. Anomaly Detection | 4/4 | Complete | 06-01, 06-02, 06-03, 06-04 |
 | 7. Render Deployment | 0/1 | Not started | — |
-| 8. Time-of-Day Chart & Patterns UX | 0/3 | Planned | — |
+| 8. Time-of-Day Chart & Patterns UX | 4/4 | Complete | 08-01, 08-02, 08-03, 08-04 |
 
 ---
 
@@ -291,4 +292,4 @@ Plans:
 - Coverage: 17/17 (100%)
 
 ---
-*Last updated: 2026-06-11*
+*Last updated: 2026-06-12*
