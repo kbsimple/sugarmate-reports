@@ -57,10 +57,7 @@ async def upload_page(request: Request):
     Returns:
         HTML page with upload form
     """
-    return templates.TemplateResponse(
-        "upload.html",
-        {"request": request}
-    )
+    return templates.TemplateResponse(request, "upload.html")
 
 
 @router.post("/upload", response_class=JSONResponse)

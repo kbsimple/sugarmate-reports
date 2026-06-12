@@ -121,9 +121,9 @@ async def get_results(request: Request, session_id: str):
     }
 
     return templates.TemplateResponse(
+        request,
         "results.html",
         {
-            "request": request,
             "session_id": session_id,
             "results": results,
             "formatted": formatted,
@@ -132,9 +132,9 @@ async def get_results(request: Request, session_id: str):
             "suggestions": formatted_suggestions,
             "tir_data": tir_data,
             "glucose_readings": raw_readings,
-            "behavioral_patterns": behavioral_patterns_data,  # Phase 4
-            "overnight_patterns": overnight_patterns_data,  # Phase 5
-            "anomaly_detection": anomaly_detection_data,  # Phase 6
+            "behavioral_patterns": behavioral_patterns_data,
+            "overnight_patterns": overnight_patterns_data,
+            "anomaly_detection": anomaly_detection_data,
         }
     )
 
