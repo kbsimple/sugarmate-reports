@@ -24,14 +24,12 @@ from tests.fixtures.sample_data import (
 class TestResultsEndpoint:
     """Tests for results display endpoints."""
 
-    @pytest.mark.skip(reason="Template rendering requires proper path setup in test context")
     def test_results_page_success(self, test_client: TestClient, sample_session_id: str):
         """Test successful results page rendering."""
         response = test_client.get(f"/results/{sample_session_id}")
 
-        # May fail on template rendering in test context
-        # Just verify route exists and returns HTML
-        assert response.status_code in [200, 500]
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
 
     def test_results_page_invalid_session(self, test_client: TestClient):
         """Test results page with invalid session ID."""
@@ -210,3 +208,68 @@ class TestResultsSessionIsolation:
         response = test_client.get(f"/results/{sample_session_id}")
 
         assert response.status_code == 404
+
+
+class TestResultsTemplateRendering:
+    """Regression tests for template rendering correctness.
+
+    These tests guard against Jinja2 template syntax errors (e.g. Django-style
+    ``{% include 'x.html' with var=val %}`` which Jinja2 rejects) and against
+    context variables that cause runtime errors during rendering.
+    """
+
+    def test_all_templates_parse_without_syntax_errors(self):
+        """All templates must be parseable by Jinja2 without TemplateSyntaxError.
+
+        Regression: results.html used Django-style include-with syntax
+        (``{% include 'x.html' with key=val %}``) which Jinja2 rejects at
+        parse time with TemplateSyntaxError, producing a 500 on every page load.
+        """
+        from jinja2 import Environment, FileSystemLoader, TemplateSyntaxError
+        from pathlib import Path
+
+        template_dir = Path("src/web/templates")
+        env = Environment(loader=FileSystemLoader(str(template_dir)))
+
+        errors = []
+        for path in sorted(template_dir.rglob("*.html")):
+            name = str(path.relative_to(template_dir))
+            try:
+                env.get_template(name)
+            except TemplateSyntaxError as exc:
+                errors.append(f"{name}: {exc}")
+
+        assert not errors, "Template syntax errors found:\n" + "\n".join(errors)
+
+    def test_results_html_page_renders_200(self, test_client: TestClient, sample_session_id: str):
+        """GET /results/{id} must return HTTP 200 with HTML content.
+
+        Regression: Jinja2 TemplateSyntaxError in results.html caused every
+        results page request to return 500 Internal Server Error.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_results_html_contains_metric_sections(self, test_client: TestClient, sample_session_id: str):
+        """Rendered results page must contain the four key metric card headings.
+
+        Regression: if the metrics_card include blocks raise a TemplateSyntaxError
+        the page body is empty or truncated — this confirms the cards actually rendered.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        body = response.text
+        assert "Time in Target" in body
+        assert "Average Glucose" in body
+        assert "Glucose Variability" in body
+        assert "GMI" in body
+
+    def test_results_html_contains_wellness_disclaimer(self, test_client: TestClient, sample_session_id: str):
+        """Rendered results page must contain the regulatory wellness disclaimer."""
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        assert "Wellness Information Only" in response.text
