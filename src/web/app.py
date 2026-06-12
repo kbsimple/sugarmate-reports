@@ -70,4 +70,4 @@ app.include_router(export.router, tags=["export"])
 async def root():
     """Redirect root to upload page."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/upload")
+    return RedirectResponse(url="/api/upload")
