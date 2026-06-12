@@ -3,7 +3,10 @@
 {% block title %}Upload - CGM Insights{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto" x-data="{ activeTab: 'file' }">
+<div class="max-w-2xl mx-auto" x-data="{
+    activeTab: {{ ('url' if prefill_url else 'file') | tojson }},
+    prefillUrl: {{ prefill_url | tojson }}
+}" x-init="if (prefillUrl) $nextTick(() => { $refs.urlInput.value = prefillUrl; $refs.urlForm.requestSubmit(); })">
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h1 class="card-title text-2xl mb-2">Upload Your CGM Data</h1>
@@ -86,6 +89,7 @@
             <!-- ── URL form ── -->
             <form
                 id="url-form"
+                x-ref="urlForm"
                 x-show="activeTab === 'url'"
                 hx-post="/upload/url"
                 hx-target="#result"
@@ -96,6 +100,7 @@
                     <input
                         type="url"
                         name="url"
+                        x-ref="urlInput"
                         class="input input-bordered w-full"
                         placeholder="https://assets.sugarmate.io/webapp/..."
                         required

@@ -12,7 +12,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
@@ -150,8 +150,10 @@ async def _analyze_and_store(
 
 
 @router.get("/upload", response_class=HTMLResponse)
-async def upload_page(request: Request):
-    return templates.TemplateResponse(request, "upload.html")
+async def upload_page(request: Request, url: Optional[str] = Query(None)):
+    return templates.TemplateResponse(
+        request, "upload.html", {"prefill_url": url or ""}
+    )
 
 
 @router.post("/upload", response_class=JSONResponse)

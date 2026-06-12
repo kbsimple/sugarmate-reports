@@ -213,6 +213,40 @@ class TestUploadEndpoint:
         assert response.status_code in [200, 400, 422]
 
 
+class TestDeepLink:
+    """Tests for GET /upload?url= deep-link pre-fill."""
+
+    def test_upload_page_without_url_param_renders(self, test_client: TestClient):
+        """GET /upload with no url param renders normally (prefill_url empty)."""
+        response = test_client.get("/upload")
+        assert response.status_code == 200
+        assert "prefillUrl" in response.text
+        # No URL pre-filled means empty string in the JS context
+        assert '"prefillUrl": ""' in response.text or "prefillUrl: ''" in response.text or 'prefillUrl: ""' in response.text
+
+    def test_upload_page_with_url_param_prefills(self, test_client: TestClient):
+        """GET /upload?url=... embeds the URL in the page for auto-submit."""
+        target = "https://example.com/data.csv"
+        response = test_client.get(f"/upload?url={target}")
+        assert response.status_code == 200
+        assert target in response.text
+
+    def test_upload_page_with_url_param_selects_url_tab(self, test_client: TestClient):
+        """When url param is present the template initialises activeTab to 'url'."""
+        response = test_client.get("/upload?url=https://example.com/data.csv")
+        assert response.status_code == 200
+        assert '"url"' in response.text
+
+    def test_deep_link_url_is_json_escaped(self, test_client: TestClient):
+        """Special characters in the url param are JSON-escaped, not injected raw."""
+        # A URL containing characters that would break an unescaped JS string literal
+        malicious = "https://example.com/data.csv?a=1&b=</script><script>alert(1)</script>"
+        response = test_client.get(f"/upload?url={malicious}")
+        assert response.status_code == 200
+        # The raw </script> injection must not appear verbatim
+        assert "</script><script>" not in response.text
+
+
 class TestUrlUploadEndpoint:
     """Tests for the /upload/url endpoint."""
 
