@@ -3,60 +3,154 @@
 Provides endpoints for uploading CGM data files and triggering analysis.
 """
 
-import tempfile
 import os
+import re
+import tempfile
+from datetime import datetime
 from pathlib import Path
+from typing import Optional
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Request, Form
+import httpx
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from typing import Optional
 
-from ..services.session import session_store, create_session
+from ..services.session import create_session, session_store
 from cgm_insights import analyze_file
-from cgm_insights.ingestion import get_parser, exclude_warmup_period
-from cgm_insights.analytics import detect_time_of_day_patterns, detect_day_of_week_patterns
+from cgm_insights.analytics import detect_day_of_week_patterns, detect_time_of_day_patterns
+from cgm_insights.analytics.anomaly_detection import analyze_anomalies
 from cgm_insights.analytics.behavioral_patterns import analyze_behavioral_patterns
 from cgm_insights.analytics.overnight_patterns import analyze_overnight_patterns
-from cgm_insights.analytics.anomaly_detection import analyze_anomalies
+from cgm_insights.ingestion import exclude_warmup_period, get_parser
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/web/templates")
 
-# Allowed file extensions
 ALLOWED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
-# Maximum file size (10MB)
-MAX_FILE_SIZE = 10 * 1024 * 1024
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+_CONTENT_TYPE_EXTS: dict[str, str] = {
+    "text/csv": ".csv",
+    "application/csv": ".csv",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+}
 
 
 def validate_upload(file: UploadFile) -> None:
-    """Validate uploaded file.
-
-    Args:
-        file: Uploaded file
+    """Validate uploaded file extension.
 
     Raises:
-        HTTPException: If file is invalid
+        HTTPException: If the extension is not in ALLOWED_EXTENSIONS.
     """
-    # Check file extension
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
         )
+
+
+def _ext_from_response(url: str, headers: httpx.Headers) -> str:
+    """Infer file extension from URL path, Content-Disposition, or Content-Type."""
+    path_ext = Path(urlparse(url).path).suffix.lower()
+    if path_ext in ALLOWED_EXTENSIONS:
+        return path_ext
+
+    cd = headers.get("content-disposition", "")
+    if cd:
+        m = re.search(r'filename[^;=\n]*=\s*[\'"]?([^\'";\n]+)', cd, re.IGNORECASE)
+        if m:
+            cd_ext = Path(m.group(1).strip()).suffix.lower()
+            if cd_ext in ALLOWED_EXTENSIONS:
+                return cd_ext
+
+    ct = headers.get("content-type", "").split(";")[0].strip().lower()
+    if ct in _CONTENT_TYPE_EXTS:
+        return _CONTENT_TYPE_EXTS[ct]
+
+    # Sugarmate and most CGM exports default to Excel when no type is declared.
+    return ".xlsx"
+
+
+async def _analyze_and_store(
+    contents: bytes,
+    filename_hint: str,
+    start_date: Optional[str],
+    end_date: Optional[str],
+    exclude_warmup: bool,
+) -> str:
+    """Run analysis pipeline on raw file bytes and return a new session_id.
+
+    Raises:
+        HTTPException: On validation or analysis failure.
+    """
+    suffix = Path(filename_hint).suffix.lower() or ".csv"
+
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+
+    try:
+        parser = get_parser(tmp_path)
+        start = datetime.fromisoformat(start_date) if start_date else None
+        end = datetime.fromisoformat(end_date) if end_date else None
+        readings = parser.parse(tmp_path, start_date=start, end_date=end)
+
+        if exclude_warmup:
+            readings = exclude_warmup_period(readings)
+
+        results = analyze_file(
+            tmp_path,
+            start_date=start_date,
+            end_date=end_date,
+            exclude_warmup=exclude_warmup,
+        )
+
+        time_patterns = detect_time_of_day_patterns(readings)
+        day_patterns = detect_day_of_week_patterns(readings)
+        all_patterns = time_patterns + day_patterns
+
+        behavioral_result = analyze_behavioral_patterns(readings)
+        overnight_result = analyze_overnight_patterns(readings)
+        anomaly_result = analyze_anomalies(readings)
+
+        raw_readings = [
+            {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
+            for r in readings[:2000]
+        ]
+
+        session_id = create_session()
+        session_store.store(
+            session_id,
+            results,
+            patterns=all_patterns,
+            raw_readings=raw_readings,
+            behavioral_patterns=behavioral_result.model_dump(),
+            overnight_patterns=overnight_result.model_dump(),
+            anomaly_detection=anomaly_result.model_dump(),
+        )
+        return session_id
+
+    except ValueError as e:
+        error_msg = str(e)
+        if "insufficient" in error_msg.lower():
+            raise HTTPException(
+                status_code=422,
+                detail="Insufficient data for analysis. Please upload a file with more glucose readings.",
+            )
+        raise HTTPException(status_code=400, detail=f"Could not process file: {error_msg}")
+
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 @router.get("/upload", response_class=HTMLResponse)
 async def upload_page(request: Request):
-    """Render upload page with file upload form.
-
-    Args:
-        request: FastAPI request object
-
-    Returns:
-        HTML page with upload form
-    """
     return templates.TemplateResponse(request, "upload.html")
 
 
@@ -67,131 +161,85 @@ async def upload_file(
     end_date: Optional[str] = Form(None),
     exclude_warmup: bool = Form(True),
 ):
-    """Handle file upload and analysis.
-
-    Args:
-        file: Uploaded CGM data file
-        start_date: Optional start date filter (ISO format)
-        end_date: Optional end date filter (ISO format)
-        exclude_warmup: Whether to exclude sensor warmup period
-
-    Returns:
-        JSON response with session_id for results retrieval
-
-    Raises:
-        HTTPException: On upload or analysis errors
-    """
-    # Validate file
+    """Handle multipart file upload and analysis."""
     validate_upload(file)
 
-    # Check file size
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB")
+
+    try:
+        session_id = await _analyze_and_store(
+            contents,
+            file.filename or "data.csv",
+            start_date,
+            end_date,
+            exclude_warmup,
+        )
+        return JSONResponse({"session_id": session_id, "redirect": f"/results/{session_id}"})
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(
-            status_code=413,
-            detail="File too large. Maximum size is 10MB"
+            status_code=500,
+            detail="An error occurred processing your file. Please try again.",
         )
 
-    # Create temp file for analysis
+
+@router.post("/upload/url", response_class=JSONResponse)
+async def upload_from_url(
+    url: str = Form(...),
+    start_date: Optional[str] = Form(None),
+    end_date: Optional[str] = Form(None),
+    exclude_warmup: bool = Form(True),
+):
+    """Fetch a CGM data file from a URL and analyse it."""
+    url = url.strip()
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise HTTPException(status_code=400, detail="Only HTTPS URLs are supported.")
+    if not parsed.netloc:
+        raise HTTPException(status_code=400, detail="Invalid URL.")
+
     try:
-        # Write to temp file
-        suffix = Path(file.filename or "data.csv").suffix
-        with tempfile.NamedTemporaryFile(
-            mode="wb",
-            suffix=suffix,
-            delete=False
-        ) as tmp:
-            tmp.write(contents)
-            tmp_path = tmp.name
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0),
+        ) as client:
+            async with client.stream("GET", url) as response:
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Could not fetch URL (HTTP {response.status_code}).",
+                    )
+                chunks: list[bytes] = []
+                total = 0
+                async for chunk in response.aiter_bytes(8192):
+                    total += len(chunk)
+                    if total > MAX_FILE_SIZE:
+                        raise HTTPException(
+                            status_code=413,
+                            detail="Downloaded file too large. Maximum size is 10MB.",
+                        )
+                    chunks.append(chunk)
 
-        try:
-            # Parse file to get readings for pattern detection
-            parser = get_parser(tmp_path)
-            from datetime import datetime
-            start = datetime.fromisoformat(start_date) if start_date else None
-            end = datetime.fromisoformat(end_date) if end_date else None
-            readings = parser.parse(tmp_path, start_date=start, end_date=end)
-
-            # Exclude warmup if requested
-            if exclude_warmup:
-                readings = exclude_warmup_period(readings)
-
-            # Analyze file using core library
-            results = analyze_file(
-                tmp_path,
-                start_date=start_date,
-                end_date=end_date,
-                exclude_warmup=exclude_warmup,
-            )
-
-            # Detect patterns
-            time_patterns = detect_time_of_day_patterns(readings)
-            day_patterns = detect_day_of_week_patterns(readings)
-            all_patterns = time_patterns + day_patterns
-
-            # Behavioral pattern analysis (Phase 4)
-            behavioral_result = analyze_behavioral_patterns(readings)
-            behavioral_patterns_dict = behavioral_result.model_dump()
-
-            # Overnight pattern analysis (Phase 5)
-            overnight_result = analyze_overnight_patterns(readings)
-            overnight_patterns_dict = overnight_result.model_dump()
-
-            # Anomaly detection (Phase 6)
-            anomaly_result = analyze_anomalies(readings)
-            anomaly_detection_dict = anomaly_result.model_dump()
-
-            # Convert readings to chart format (limit for web display)
-            raw_readings = [
-                {
-                    "timestamp": r.timestamp.isoformat(),
-                    "glucose": r.glucose_mg_dl
-                }
-                for r in readings[:2000]  # Limit to 2000 points for web
-            ]
-
-            # Create session and store results with patterns
-            session_id = create_session()
-            session_store.store(
-                session_id,
-                results,
-                patterns=all_patterns,
-                raw_readings=raw_readings,
-                behavioral_patterns=behavioral_patterns_dict,
-                overnight_patterns=overnight_patterns_dict,
-                anomaly_detection=anomaly_detection_dict,
-            )
-
-            return JSONResponse({
-                "session_id": session_id,
-                "redirect": f"/results/{session_id}"
-            })
-
-        except ValueError as e:
-            # Handle insufficient data or parsing errors
-            error_msg = str(e)
-            if "insufficient" in error_msg.lower():
-                raise HTTPException(
-                    status_code=422,
-                    detail="Insufficient data for analysis. Please upload a file with more glucose readings."
-                )
-            raise HTTPException(
-                status_code=400,
-                detail=f"Could not process file: {error_msg}"
-            )
-
-        finally:
-            # Clean up temp file
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
+                contents = b"".join(chunks)
+                ext = _ext_from_response(url, response.headers)
 
     except HTTPException:
         raise
     except Exception as e:
-        # Generic error - don't expose internal details
+        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {e}")
+
+    try:
+        session_id = await _analyze_and_store(
+            contents, f"data{ext}", start_date, end_date, exclude_warmup
+        )
+        return JSONResponse({"session_id": session_id, "redirect": f"/results/{session_id}"})
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(
             status_code=500,
-            detail="An error occurred processing your file. Please try again."
+            detail="An error occurred processing the file. Please try again.",
         )

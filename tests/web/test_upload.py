@@ -12,6 +12,7 @@ Tests cover:
 
 import io
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -210,3 +211,89 @@ class TestUploadEndpoint:
 
         # Should succeed or fail gracefully
         assert response.status_code in [200, 400, 422]
+
+
+class TestUrlUploadEndpoint:
+    """Tests for the /upload/url endpoint."""
+
+    def test_rejects_http_url(self, test_client: TestClient):
+        """Non-HTTPS URLs must be rejected."""
+        response = test_client.post("/upload/url", data={"url": "http://example.com/data.csv"})
+        assert response.status_code == 400
+        assert "HTTPS" in response.json()["detail"]
+
+    def test_rejects_ftp_url(self, test_client: TestClient):
+        """Non-HTTPS scheme must be rejected."""
+        response = test_client.post("/upload/url", data={"url": "ftp://example.com/data.csv"})
+        assert response.status_code == 400
+
+    def test_rejects_empty_url(self, test_client: TestClient):
+        """Blank URL must be rejected."""
+        response = test_client.post("/upload/url", data={"url": "   "})
+        assert response.status_code == 400
+
+    def test_rejects_no_host(self, test_client: TestClient):
+        """URL with no hostname must be rejected."""
+        response = test_client.post("/upload/url", data={"url": "https://"})
+        assert response.status_code == 400
+
+    def test_url_success(self, test_client: TestClient, sample_csv_bytes: bytes):
+        """Successful URL download runs the full analysis pipeline."""
+        import httpx
+
+        # Build a minimal mock that looks like httpx's async streaming response.
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_headers = MagicMock(spec=httpx.Headers)
+        mock_headers.get = lambda key, default="": {
+            "content-type": "text/csv",
+            "content-disposition": "",
+        }.get(key, default)
+        mock_response.headers = mock_headers
+
+        async def _aiter_bytes(chunk_size: int = 8192):
+            yield sample_csv_bytes
+
+        mock_response.aiter_bytes = _aiter_bytes
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.stream = MagicMock(return_value=mock_response)
+
+        with patch("src.web.routes.upload.httpx.AsyncClient", return_value=mock_client):
+            response = test_client.post(
+                "/upload/url",
+                data={"url": "https://example.com/data.csv"},
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "session_id" in data
+        assert data["session_id"]
+        assert "/results/" in data["redirect"]
+
+    def test_url_http_error_from_server(self, test_client: TestClient):
+        """Non-200 response from the remote server is surfaced as a 400."""
+        import httpx
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.stream = MagicMock(return_value=mock_response)
+
+        with patch("src.web.routes.upload.httpx.AsyncClient", return_value=mock_client):
+            response = test_client.post(
+                "/upload/url",
+                data={"url": "https://example.com/missing.csv"},
+            )
+
+        assert response.status_code == 400
+        assert "404" in response.json()["detail"]
