@@ -1,0 +1,94 @@
+{# Out-of-Range Priority Insights component.
+Parameters:
+  - behavioral_patterns: dict from BehavioralAnalysisResult.model_dump(), or None.
+    Renders nothing if None or if insufficient_data is True.
+    Renders nothing if no 60-min hourly-boundary patterns fall outside 70–180 mg/dL.
+Data source: 60-minute window patterns at hourly boundaries (bucket_start_minute % 60 == 0).
+Sections: Above Range (avg_glucose > 180) then Below Range (avg_glucose < 70).
+#}
+{% if behavioral_patterns and not behavioral_patterns.insufficient_data %}
+{% set window_patterns = behavioral_patterns.patterns
+    | selectattr("window_size_min", "equalto", 60) | list %}
+{# Hourly boundaries only — avoids overlapping 5-min slide windows #}
+{% set hourly_patterns = [] %}
+{% for p in window_patterns %}
+  {% if p.bucket_start_minute % 60 == 0 %}
+    {% set _ = hourly_patterns.append(p) %}
+  {% endif %}
+{% endfor %}
+
+{# Detect presence of out-of-range patterns before rendering card wrapper #}
+{% set has_above = [] %}
+{% set has_below = [] %}
+{% for p in hourly_patterns %}
+  {% if p.avg_glucose > 180 %}{% set _ = has_above.append(1) %}{% endif %}
+  {% if p.avg_glucose < 70 %}{% set _ = has_below.append(1) %}{% endif %}
+{% endfor %}
+
+{% if has_above or has_below %}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg font-bold">Time Windows to Focus On</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+            These time windows consistently show glucose outside the 70–180 mg/dL range.
+        </p>
+
+        {% if has_above %}
+        <h4 class="text-sm font-semibold mb-2">Above Range</h4>
+        <div class="space-y-2 mb-4">
+        {% for pattern in hourly_patterns %}
+          {% if pattern.avg_glucose > 180 %}
+          <div class="alert alert-warning">
+            <div class="flex-1">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
+                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL</span>
+              </div>
+              {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
+              <p class="text-sm mt-1 text-base-content/70">
+                Weekdays: {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL
+                &middot;
+                Weekends: {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL
+              </p>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if has_below %}
+        <h4 class="text-sm font-semibold mb-2">Below Range</h4>
+        <div class="space-y-2 mb-4">
+        {% for pattern in hourly_patterns %}
+          {% if pattern.avg_glucose < 70 %}
+          <div class="alert alert-error">
+            <div class="flex-1">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
+                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL</span>
+              </div>
+              {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
+              <p class="text-sm mt-1 text-base-content/70">
+                Weekdays: {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL
+                &middot;
+                Weekends: {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL
+              </p>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-base-200 rounded-lg p-2 mt-2">
+            <p class="text-xs text-base-content/60">
+                <strong>Wellness Information Only:</strong> These patterns and suggestions are for informational purposes and are not medical advice. Always discuss glucose management with your healthcare provider.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
