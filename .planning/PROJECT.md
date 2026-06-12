@@ -8,9 +8,9 @@ A web application for CGM (Continuous Glucose Monitor) users to upload their dat
 
 Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
 
-## Current Milestone: v2.0 Pattern Analysis Release
+## Current Milestone: v3.0 UX Improvements (Phase 8 Complete)
 
-**Goal:** Surface behavioral patterns and anomalies from CGM data so users understand when they're consistent and can take targeted action.
+**Goal:** Surface behavioral patterns and anomalies from CGM data so users understand when they're consistent and can take targeted action. Phase 8 fixed ToD chart rendering and elevated out-of-range insights as priority cards.
 
 **Target features:**
 - **ANLY-02**: Anomaly detection — unexplained highs/lows outside established patterns
@@ -34,13 +34,16 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 - [x] Generate actionable suggestions
 - [x] AGP report export
 
-### Active
+### Validated (v2.0 + v3.0 shipped)
 
-- [ ] Anomaly detection — identify unexplained highs/lows outside established patterns
-- [ ] Sleep analysis — overnight patterns from inferred 10pm-6am window
-- [ ] Time-bucketed behavioral patterns (30/60/120 min windows, sliding every 5 min)
-- [ ] Weekday vs weekend segmentation
-- [ ] Cross-day consistency analysis ("is noon behavior similar across weekdays?")
+- [x] Anomaly detection — identify unexplained highs/lows outside established patterns (Validated in Phase 6)
+- [x] Sleep/overnight analysis — overnight patterns from inferred 10pm-6am window (Validated in Phase 5)
+- [x] Time-bucketed behavioral patterns (30/60/120 min windows, sliding every 5 min) (Validated in Phase 4)
+- [x] Weekday vs weekend segmentation (Validated in Phase 4)
+- [x] Cross-day consistency analysis (Validated in Phase 4)
+- [x] Time-of-Day chart rendering fix (Validated in Phase 8)
+- [x] Inline range status per behavioral pattern window, no accordion (Validated in Phase 8)
+- [x] Out-of-range priority insights card with % out of range (Validated in Phase 8)
 
 ### Out of Scope
 
