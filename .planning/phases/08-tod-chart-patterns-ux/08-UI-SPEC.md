@@ -65,8 +65,7 @@ All type is rendered by the browser using system-ui. DaisyUI provides semantic c
 | Section heading / card-title | 20px (`text-xl`) | 700 (bold) | 1.2 |
 
 Notes:
-- Only two weights used: 400 (regular) and 700 (bold). `font-medium` (500/600) is used for pattern row labels and metric values — treat as 600 semibold in practice.
-- `font-semibold` maps to weight 600 in system-ui stacks; used for avg glucose values in row right column.
+- Exactly two weights used: 400 (regular) and 700 (bold). All emphasis uses `font-bold`.
 - No custom font loading. All fonts resolved from system stack.
 
 Source: `base.html` (`Chart.defaults.font.family`), existing component HTML classes
@@ -132,7 +131,7 @@ Left zone badges — declared order:
 2. Range status badge: `badge-error` ("Below Range") / `badge-success badge-outline` ("In Range") / `badge-warning` ("Above Range") — `badge-sm`
 
 Right zone:
-- Avg glucose: `text-sm font-semibold` — `{value} mg/dL`
+- Avg glucose: `text-sm font-bold` — `{value} mg/dL`
 - WD/WE split (when both values are not null): `text-xs text-base-content/60` — `WD {value} · WE {value}`
 
 No `<details>`, no `<summary>`, no hidden content. All information visible on first render.
@@ -153,7 +152,7 @@ If neither section has any patterns: component renders nothing (no empty state c
 
 Each insight card:
 - Container: `alert alert-warning` (above range) or `alert alert-error` (below range)
-- Header line: `{bucket_label} — Above Range` / `{bucket_label} — Below Range` at `font-medium`
+- Header line: `{bucket_label} — Above Range` / `{bucket_label} — Below Range` at `font-bold`
 - Value line: `avg {avg_glucose rounded to 0} mg/dL` at `text-sm`
 - Weekday/weekend split (when both not null): `Weekdays: {wd} mg/dL · Weekends: {we} mg/dL` at `text-sm text-base-content/70`
 
