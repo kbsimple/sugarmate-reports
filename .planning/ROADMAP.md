@@ -29,6 +29,7 @@ Users upload their CGM data and leave knowing exactly what to focus on to improv
 ### v3.0 (Current)
 
 - [ ] **Phase 7: Render Deployment** - App is publicly accessible on Render with correct module paths, clean dependencies, and production-ready CORS
+- [ ] **Phase 8: Time-of-Day Chart & Patterns UX** - Fix blank Time-of-Day chart, redesign behavioral patterns with inline range status (no accordion, variability + range dimensions), elevate out-of-range time windows as actionable priority insights segmented by weekday/weekend
 
 ---
 
@@ -173,6 +174,26 @@ Plans:
 
 ---
 
+### Phase 8: Time-of-Day Chart & Patterns UX
+**Goal:** Users can see a working Time-of-Day chart, understand their behavioral patterns with inline range status (no accordion), and immediately identify which time windows consistently fall outside range — segmented by weekday/weekend — with enough detail to take action.
+
+**Depends on:** Phase 7 (production deployment)
+
+**Success Criteria** (what must be TRUE):
+1. Time-of-Day Patterns chart renders data (not blank) for any uploaded file
+2. Behavioral patterns section shows range status inline for each time window without accordion/collapse — user sees at a glance whether the window is below range, in range, or above range
+3. Variability and range status are both visible simultaneously (two dimensions per window)
+4. Out-of-range time windows are surfaced as high-priority insights, segmented by weekday vs weekend
+5. Each out-of-range insight includes enough specific detail (time window, average value, % out of range, weekday/weekend split) to motivate action
+6. Wellness language maintained throughout; no medical advice
+
+**Plans:**
+- [ ] 08-01-PLAN.md — Fix Time-of-Day chart rendering bug and audit all chart JS
+- [ ] 08-02-PLAN.md — Behavioral patterns UX: inline range status, two-dimensional display, remove accordion
+- [ ] 08-03-PLAN.md — Elevate out-of-range insights: weekday/weekend segmentation, priority ordering, detail richness
+
+---
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -184,6 +205,7 @@ Plans:
 | 5. Sleep Analysis | 4/4 | Complete | 05-01, 05-02, 05-03, 05-04 |
 | 6. Anomaly Detection | 4/4 | Complete | 06-01, 06-02, 06-03, 06-04 |
 | 7. Render Deployment | 0/1 | Not started | — |
+| 8. Time-of-Day Chart & Patterns UX | 0/3 | Planned | — |
 
 ---
 
