@@ -53,38 +53,24 @@
 
     <!-- Key Metrics Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {% include 'components/metrics_card.html' with
-            title="Time in Target"
-            value=results.time_in_range.target_pct|round(1)
-            unit="%"
-            target_range="70-180 mg/dL"
-            status="good"
-            description="Percentage of readings in healthy range" %}
+        {% with title="Time in Target", value=results.time_in_range.target_pct|round(1), unit="%", target_range="70-180 mg/dL", status="good", description="Percentage of readings in healthy range" %}
+        {% include 'components/metrics_card.html' %}
+        {% endwith %}
 
         {% set avg_status = "good" if results.average_glucose < 154 else ("warning" if results.average_glucose < 183 else "bad") %}
-        {% include 'components/metrics_card.html' with
-            title="Average Glucose"
-            value=results.average_glucose|round(0)|int
-            unit="mg/dL"
-            status=avg_status
-            description="Mean glucose level" %}
+        {% with title="Average Glucose", value=results.average_glucose|round(0)|int, unit="mg/dL", status=avg_status, description="Mean glucose level" %}
+        {% include 'components/metrics_card.html' %}
+        {% endwith %}
 
         {% set cv_status = "good" if results.cv_pct < 36 else ("warning" if results.cv_pct < 45 else "bad") %}
-        {% include 'components/metrics_card.html' with
-            title="Glucose Variability (CV)"
-            value=results.cv_pct|round(1)
-            unit="%"
-            target_range="<36%"
-            status=cv_status
-            description="Coefficient of variation" %}
+        {% with title="Glucose Variability (CV)", value=results.cv_pct|round(1), unit="%", target_range="<36%", status=cv_status, description="Coefficient of variation" %}
+        {% include 'components/metrics_card.html' %}
+        {% endwith %}
 
         {% set gmi_status = "good" if results.gmi < 7 else ("warning" if results.gmi < 8 else "bad") %}
-        {% include 'components/metrics_card.html' with
-            title="GMI"
-            value=results.gmi|round(1)
-            unit="%"
-            status=gmi_status
-            description="Estimated A1C" %}
+        {% with title="GMI", value=results.gmi|round(1), unit="%", status=gmi_status, description="Estimated A1C" %}
+        {% include 'components/metrics_card.html' %}
+        {% endwith %}
 
         <!-- Note: Using custom card for GMI with caveat -->
         <div class="card bg-base-100 shadow-md metric-card">
