@@ -57,6 +57,7 @@ class BehavioralPattern(BaseModel):
     weekend_avg_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
     days_with_data: int = Field(..., ge=1)
     reading_count: int = Field(..., ge=1)
+    pct_out_of_range: float = Field(..., ge=0.0, le=1.0, description="Fraction of readings outside 70–180 mg/dL")
 
     model_config = ConfigDict(frozen=True)
 
@@ -221,6 +222,10 @@ def _compute_all_buckets(
             cv = std_g / avg_g * 100
         weekday_avg, _ = _daily_stats(subset, "weekday", min_days)
         weekend_avg, _ = _daily_stats(subset, "weekend", min_days)
+        out_of_range_count = subset.filter(
+            (pl.col("glucose") < 70) | (pl.col("glucose") > 180)
+        ).height
+        pct_out_of_range = out_of_range_count / subset.height
         results.append(
             {
                 "bucket_start": bs,
@@ -230,6 +235,7 @@ def _compute_all_buckets(
                 "reading_count": subset.height,
                 "weekday_avg_glucose": weekday_avg,
                 "weekend_avg_glucose": weekend_avg,
+                "pct_out_of_range": pct_out_of_range,
             }
         )
     return results
@@ -326,6 +332,7 @@ def analyze_behavioral_patterns(
                 weekend_avg_glucose=b["weekend_avg_glucose"],
                 days_with_data=b["days_with_data"],
                 reading_count=b["reading_count"],
+                pct_out_of_range=b["pct_out_of_range"],
             )
             all_patterns.append(pattern)
     return BehavioralAnalysisResult(

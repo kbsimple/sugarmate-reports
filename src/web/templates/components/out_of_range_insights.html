@@ -42,7 +42,7 @@ Sections: Above Range (avg_glucose > 180) then Below Range (avg_glucose < 70).
             <div class="flex-1">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
-                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL</span>
+                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
               </div>
               {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
               <p class="text-sm mt-1 text-base-content/70">
@@ -67,7 +67,7 @@ Sections: Above Range (avg_glucose > 180) then Below Range (avg_glucose < 70).
             <div class="flex-1">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
-                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL</span>
+                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
               </div>
               {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
               <p class="text-sm mt-1 text-base-content/70">

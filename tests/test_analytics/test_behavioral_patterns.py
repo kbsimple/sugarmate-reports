@@ -284,6 +284,7 @@ def test_behavioral_pattern_is_immutable():
         avg_glucose=120.0,
         days_with_data=5,
         reading_count=50,
+        pct_out_of_range=0.25,
     )
     with pytest.raises(Exception):  # ValidationError from Pydantic frozen model
         pattern.avg_glucose = 999.0
