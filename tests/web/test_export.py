@@ -117,8 +117,8 @@ class TestExportSessionIsolation:
         files1 = {"file": ("test1.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
         files2 = {"file": ("test2.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
 
-        response1 = test_client.post("/api/upload", files=files1)
-        response2 = test_client.post("/api/upload", files=files2)
+        response1 = test_client.post("/upload", files=files1)
+        response2 = test_client.post("/upload", files=files2)
 
         session_id1 = response1.json()["session_id"]
         session_id2 = response2.json()["session_id"]

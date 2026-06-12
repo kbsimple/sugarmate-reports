@@ -27,7 +27,7 @@ class TestResultsEndpoint:
     @pytest.mark.skip(reason="Template rendering requires proper path setup in test context")
     def test_results_page_success(self, test_client: TestClient, sample_session_id: str):
         """Test successful results page rendering."""
-        response = test_client.get(f"/api/results/{sample_session_id}")
+        response = test_client.get(f"/results/{sample_session_id}")
 
         # May fail on template rendering in test context
         # Just verify route exists and returns HTML
@@ -35,20 +35,20 @@ class TestResultsEndpoint:
 
     def test_results_page_invalid_session(self, test_client: TestClient):
         """Test results page with invalid session ID."""
-        response = test_client.get("/api/results/invalid-session-id")
+        response = test_client.get("/results/invalid-session-id")
 
         assert response.status_code == 404
 
     def test_results_page_nonexistent_session(self, test_client: TestClient):
         """Test results page with non-existent UUID session."""
         fake_session_id = "00000000-0000-0000-0000-000000000000"
-        response = test_client.get(f"/api/results/{fake_session_id}")
+        response = test_client.get(f"/results/{fake_session_id}")
 
         assert response.status_code == 404
 
     def test_results_json_endpoint(self, test_client: TestClient, sample_session_id: str):
         """Test JSON results endpoint returns valid data."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -60,13 +60,13 @@ class TestResultsEndpoint:
 
     def test_results_json_invalid_session(self, test_client: TestClient):
         """Test JSON endpoint with invalid session."""
-        response = test_client.get("/api/results/invalid-session-id/data")
+        response = test_client.get("/results/invalid-session-id/data")
 
         assert response.status_code == 404
 
     def test_results_contain_average_glucose(self, test_client: TestClient, sample_session_id: str):
         """Test that results contain average glucose."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -77,7 +77,7 @@ class TestResultsEndpoint:
 
     def test_results_contain_time_in_range(self, test_client: TestClient, sample_session_id: str):
         """Test that results contain time in range breakdown."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -96,7 +96,7 @@ class TestResultsEndpoint:
 
     def test_results_contain_gmi(self, test_client: TestClient, sample_session_id: str):
         """Test that results contain GMI."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -108,7 +108,7 @@ class TestResultsEndpoint:
 
     def test_results_contain_cv(self, test_client: TestClient, sample_session_id: str):
         """Test that results contain CV."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -120,7 +120,7 @@ class TestResultsEndpoint:
 
     def test_results_contain_total_readings(self, test_client: TestClient, sample_session_id: str):
         """Test that results contain total readings count."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -131,7 +131,7 @@ class TestResultsEndpoint:
 
     def test_results_patterns_format(self, test_client: TestClient, sample_session_id: str):
         """Test that patterns have expected format."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -148,7 +148,7 @@ class TestResultsEndpoint:
 
     def test_results_with_patterns(self, test_client: TestClient, sample_session_with_patterns: str):
         """Test results endpoint with patterns present."""
-        response = test_client.get(f"/api/results/{sample_session_with_patterns}/data")
+        response = test_client.get(f"/results/{sample_session_with_patterns}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -159,7 +159,7 @@ class TestResultsEndpoint:
 
     def test_results_glucose_readings_format(self, test_client: TestClient, sample_session_id: str):
         """Test that glucose readings have expected format."""
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
 
         assert response.status_code == 200
         data = response.json()
@@ -184,15 +184,15 @@ class TestResultsSessionIsolation:
         files1 = {"file": ("test1.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
         files2 = {"file": ("test2.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
 
-        response1 = test_client.post("/api/upload", files=files1)
-        response2 = test_client.post("/api/upload", files=files2)
+        response1 = test_client.post("/upload", files=files1)
+        response2 = test_client.post("/upload", files=files2)
 
         session_id1 = response1.json()["session_id"]
         session_id2 = response2.json()["session_id"]
 
         # Get results for both
-        results1 = test_client.get(f"/api/results/{session_id1}/data").json()
-        results2 = test_client.get(f"/api/results/{session_id2}/data").json()
+        results1 = test_client.get(f"/results/{session_id1}/data").json()
+        results2 = test_client.get(f"/results/{session_id2}/data").json()
 
         # Sessions should be different
         assert session_id1 != session_id2
@@ -207,6 +207,6 @@ class TestResultsSessionIsolation:
         session_store.delete(sample_session_id)
 
         # Try to get results
-        response = test_client.get(f"/api/results/{sample_session_id}")
+        response = test_client.get(f"/results/{sample_session_id}")
 
         assert response.status_code == 404

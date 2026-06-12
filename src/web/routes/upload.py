@@ -167,7 +167,7 @@ async def upload_file(
 
             return JSONResponse({
                 "session_id": session_id,
-                "redirect": f"/api/results/{session_id}"
+                "redirect": f"/results/{session_id}"
             })
 
         except ValueError as e:

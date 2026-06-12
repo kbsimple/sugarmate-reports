@@ -61,8 +61,8 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 # Import and include routers after app is created to avoid circular imports
 from .routes import upload, results, export  # noqa: E402
 
-app.include_router(upload.router, prefix="/api", tags=["upload"])
-app.include_router(results.router, prefix="/api", tags=["results"])
+app.include_router(upload.router, tags=["upload"])
+app.include_router(results.router, tags=["results"])
 app.include_router(export.router, tags=["export"])
 
 
@@ -70,4 +70,4 @@ app.include_router(export.router, tags=["export"])
 async def root():
     """Redirect root to upload page."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/api/upload")
+    return RedirectResponse(url="/upload")

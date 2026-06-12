@@ -28,7 +28,7 @@ class TestUploadEndpoint:
         """Test that upload page endpoint is accessible."""
         # Note: Template rendering may fail in test context due to path issues
         # This test verifies the route is registered and responds
-        response = test_client.get("/api/upload")
+        response = test_client.get("/upload")
 
         # Route should exist (may return 200 or template error)
         # In production, this returns HTML. In tests, templates may not render.
@@ -38,7 +38,7 @@ class TestUploadEndpoint:
         """Test successful file upload returns session_id."""
         files = {"file": ("test_data.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         assert response.status_code == 200
         data = response.json()
@@ -53,7 +53,7 @@ class TestUploadEndpoint:
         """Test that successful upload stores session data."""
         files = {"file": ("test_data.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         assert response.status_code == 200
         session_id = response.json()["session_id"]
@@ -68,7 +68,7 @@ class TestUploadEndpoint:
         """Test upload rejects non-CSV files."""
         files = {"file": ("test.txt", io.BytesIO(b"invalid content"), "text/plain")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         assert response.status_code == 400
         assert "Invalid file type" in response.json()["detail"]
@@ -80,7 +80,7 @@ class TestUploadEndpoint:
         # Excel files are allowed but may fail differently
         files = {"file": ("test.xlsx", io.BytesIO(b"invalid excel"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         # Should either fail on parsing or file validation
         # Since we don't have valid Excel data, expect 400 or 500
@@ -90,7 +90,7 @@ class TestUploadEndpoint:
         """Test upload rejects empty files."""
         files = {"file": ("empty.csv", io.BytesIO(b""), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         # Empty file should result in error (parsing or validation)
         assert response.status_code in [400, 422, 500]
@@ -101,7 +101,7 @@ class TestUploadEndpoint:
         content = b"datetime,mg_dl\n2026-04-25 12:00,140\n"
         files = {"file": ("minimal.csv", io.BytesIO(content), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         # Should fail due to insufficient data (400 or 422 depending on error type)
         assert response.status_code in [400, 422]
@@ -110,7 +110,7 @@ class TestUploadEndpoint:
         """Test upload rejects files larger than 10MB."""
         files = {"file": ("large.csv", io.BytesIO(large_csv_bytes), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         assert response.status_code == 413
         assert "File too large" in response.json()["detail"]
@@ -127,7 +127,7 @@ class TestUploadEndpoint:
             "exclude_warmup": "true",
         }
 
-        response = test_client.post("/api/upload", files=files, data=data)
+        response = test_client.post("/upload", files=files, data=data)
 
         assert response.status_code == 200
         session_id = response.json()["session_id"]
@@ -137,7 +137,7 @@ class TestUploadEndpoint:
         """Test that session persists across requests."""
         # Upload file and get session ID
         files = {"file": ("test.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
         session_id = response.json()["session_id"]
 
         # Retrieve session data
@@ -156,8 +156,8 @@ class TestUploadEndpoint:
         files1 = {"file": ("test1.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
         files2 = {"file": ("test2.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
 
-        response1 = test_client.post("/api/upload", files=files1)
-        response2 = test_client.post("/api/upload", files=files2)
+        response1 = test_client.post("/upload", files=files1)
+        response2 = test_client.post("/upload", files=files2)
 
         session_id1 = response1.json()["session_id"]
         session_id2 = response2.json()["session_id"]
@@ -174,7 +174,7 @@ class TestUploadEndpoint:
         files = {"file": ("test.csv", io.BytesIO(sample_csv_bytes), "text/csv")}
         data = {"exclude_warmup": "false"}
 
-        response = test_client.post("/api/upload", files=files, data=data)
+        response = test_client.post("/upload", files=files, data=data)
 
         assert response.status_code == 200
         session_id = response.json()["session_id"]
@@ -190,7 +190,7 @@ class TestUploadEndpoint:
         content = b"datetime,mg_dl\ninvalid_date,not_a_number\n"
         files = {"file": ("malformed.csv", io.BytesIO(content), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         # Should handle gracefully with appropriate error
         assert response.status_code in [400, 422, 500]
@@ -206,7 +206,7 @@ class TestUploadEndpoint:
         # The parser should handle extra columns gracefully
         files = {"file": ("extra_cols.csv", io.BytesIO(content.encode()), "text/csv")}
 
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
 
         # Should succeed or fail gracefully
         assert response.status_code in [200, 400, 422]

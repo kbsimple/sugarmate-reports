@@ -23,7 +23,7 @@ class TestFullWorkflow:
         csv_content = create_sample_csv_content()
         files = {"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")}
 
-        upload_response = test_client.post("/api/upload", files=files)
+        upload_response = test_client.post("/upload", files=files)
 
         assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
         upload_data = upload_response.json()
@@ -33,7 +33,7 @@ class TestFullWorkflow:
         assert session_id  # Non-empty session ID
 
         # Step 2: Get results
-        results_response = test_client.get(f"/api/results/{session_id}/data")
+        results_response = test_client.get(f"/results/{session_id}/data")
 
         assert results_response.status_code == 200, f"Results failed: {results_response.text}"
         results_data = results_response.json()
@@ -55,7 +55,7 @@ class TestFullWorkflow:
         csv_content = create_sample_csv_content()
         files = {"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")}
 
-        upload_response = test_client.post("/api/upload", files=files)
+        upload_response = test_client.post("/upload", files=files)
 
         assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
         session_id = upload_response.json()["session_id"]
@@ -73,7 +73,7 @@ class TestFullWorkflow:
         csv_content = create_sample_csv_content()
         files = {"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")}
 
-        upload_response = test_client.post("/api/upload", files=files)
+        upload_response = test_client.post("/upload", files=files)
         assert upload_response.status_code == 200
         session_id = upload_response.json()["session_id"]
 
@@ -92,21 +92,21 @@ class TestFullWorkflow:
         # Upload 1
         csv_content1 = create_sample_csv_content()
         files1 = {"file": ("test1.csv", io.BytesIO(csv_content1.encode()), "text/csv")}
-        response1 = test_client.post("/api/upload", files=files1)
+        response1 = test_client.post("/upload", files=files1)
         session_id1 = response1.json()["session_id"]
 
         # Upload 2
         csv_content2 = create_sample_csv_content()
         files2 = {"file": ("test2.csv", io.BytesIO(csv_content2.encode()), "text/csv")}
-        response2 = test_client.post("/api/upload", files=files2)
+        response2 = test_client.post("/upload", files=files2)
         session_id2 = response2.json()["session_id"]
 
         # Sessions should be different
         assert session_id1 != session_id2
 
         # Both should have valid results
-        results1 = test_client.get(f"/api/results/{session_id1}/data").json()
-        results2 = test_client.get(f"/api/results/{session_id2}/data").json()
+        results1 = test_client.get(f"/results/{session_id1}/data").json()
+        results2 = test_client.get(f"/results/{session_id2}/data").json()
 
         assert results1["results"]["total_readings"] > 0
         assert results2["results"]["total_readings"] > 0
@@ -116,11 +116,11 @@ class TestFullWorkflow:
         # Create session via upload
         csv_content = create_sample_csv_content()
         files = {"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")}
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
         session_id = response.json()["session_id"]
 
         # Use session for results
-        results_response = test_client.get(f"/api/results/{session_id}/data")
+        results_response = test_client.get(f"/results/{session_id}/data")
         assert results_response.status_code == 200
 
         # Use session for export
@@ -132,7 +132,7 @@ class TestFullWorkflow:
         assert deleted is True
 
         # Session should no longer be accessible
-        results_response2 = test_client.get(f"/api/results/{session_id}/data")
+        results_response2 = test_client.get(f"/results/{session_id}/data")
         assert results_response2.status_code == 404
 
         export_response2 = test_client.get(f"/export/{session_id}/agp")
@@ -144,7 +144,7 @@ class TestErrorHandling:
 
     def test_invalid_session_for_results(self, test_client: TestClient):
         """Test that invalid session returns 404 for results."""
-        response = test_client.get("/api/results/invalid-session-id/data")
+        response = test_client.get("/results/invalid-session-id/data")
         assert response.status_code == 404
 
     def test_invalid_session_for_export(self, test_client: TestClient):
@@ -155,14 +155,14 @@ class TestErrorHandling:
     def test_upload_invalid_file_type(self, test_client: TestClient):
         """Test that invalid file type is rejected."""
         files = {"file": ("test.txt", io.BytesIO(b"invalid"), "text/plain")}
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
         assert response.status_code == 400
         assert "Invalid file type" in response.json()["detail"]
 
     def test_upload_empty_file(self, test_client: TestClient):
         """Test that empty file is rejected."""
         files = {"file": ("empty.csv", io.BytesIO(b""), "text/csv")}
-        response = test_client.post("/api/upload", files=files)
+        response = test_client.post("/upload", files=files)
         assert response.status_code in [400, 422, 500]  # Various error codes possible
 
 
@@ -174,11 +174,11 @@ class TestDataConsistency:
         # Upload
         csv_content = create_sample_csv_content()
         files = {"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")}
-        upload_response = test_client.post("/api/upload", files=files)
+        upload_response = test_client.post("/upload", files=files)
         session_id = upload_response.json()["session_id"]
 
         # Get results
-        results_response = test_client.get(f"/api/results/{session_id}/data")
+        results_response = test_client.get(f"/results/{session_id}/data")
         results = results_response.json()
 
         # Verify session store contains same data
@@ -191,7 +191,7 @@ class TestDataConsistency:
         # Upload
         csv_content = create_sample_csv_content()
         files = {"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")}
-        upload_response = test_client.post("/api/upload", files=files)
+        upload_response = test_client.post("/upload", files=files)
         session_id = upload_response.json()["session_id"]
 
         # Get session data
@@ -216,7 +216,7 @@ class TestPerformance:
         import time
 
         start = time.time()
-        response = test_client.get(f"/api/results/{sample_session_id}/data")
+        response = test_client.get(f"/results/{sample_session_id}/data")
         elapsed = time.time() - start
 
         assert response.status_code == 200
