@@ -217,12 +217,12 @@ class TestDeepLink:
     """Tests for GET /upload?url= deep-link pre-fill."""
 
     def test_upload_page_without_url_param_renders(self, test_client: TestClient):
-        """GET /upload with no url param renders normally (prefill_url empty)."""
+        """GET /upload with no url param renders the uploadPage function with empty prefill."""
         response = test_client.get("/upload")
         assert response.status_code == 200
-        assert "prefillUrl" in response.text
-        # No URL pre-filled means empty string in the JS context
-        assert '"prefillUrl": ""' in response.text or "prefillUrl: ''" in response.text or 'prefillUrl: ""' in response.text
+        assert "uploadPage" in response.text
+        # No URL means empty string assigned to prefillUrl in the JS function
+        assert 'const prefillUrl = ""' in response.text or "const prefillUrl = ''" in response.text
 
     def test_upload_page_with_url_param_prefills(self, test_client: TestClient):
         """GET /upload?url=... embeds the URL in the page for auto-submit."""

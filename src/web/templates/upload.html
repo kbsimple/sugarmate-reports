@@ -3,10 +3,7 @@
 {% block title %}Upload - CGM Insights{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto" x-data="{
-    activeTab: {{ ('url' if prefill_url else 'file') | tojson }},
-    prefillUrl: {{ prefill_url | tojson }}
-}" x-init="if (prefillUrl) $nextTick(() => { $refs.urlInput.value = prefillUrl; $refs.urlForm.requestSubmit(); })">
+<div class="max-w-2xl mx-auto" x-data="uploadPage()">
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h1 class="card-title text-2xl mb-2">Upload Your CGM Data</h1>
@@ -152,6 +149,22 @@
 
 {% block scripts %}
 <script>
+    function uploadPage() {
+        const prefillUrl = {{ prefill_url | tojson }};
+        return {
+            activeTab: prefillUrl ? 'url' : 'file',
+            prefillUrl: prefillUrl,
+            init() {
+                if (this.prefillUrl) {
+                    this.$nextTick(() => {
+                        this.$refs.urlInput.value = this.prefillUrl;
+                        this.$refs.urlForm.requestSubmit();
+                    });
+                }
+            }
+        };
+    }
+
     function showIndicator(message) {
         const indicator = document.getElementById('loading-indicator');
         const text = indicator.querySelector('p');
