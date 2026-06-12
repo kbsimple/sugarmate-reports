@@ -38,33 +38,44 @@ Parameters:
                    {% if tab_checked %}checked="checked"{% endif %} />
             <div role="tabpanel" class="tab-content pt-4">
                 {% set window_patterns = all_patterns | selectattr("window_size_min", "equalto", window_min) | list %}
-                {% if window_patterns %}
+                {# Density filter: show only non-overlapping boundary buckets to avoid overwhelming display #}
+                {% set display_patterns = [] %}
+                {% for p in window_patterns %}
+                  {% if p.bucket_start_minute % window_min == 0 %}
+                    {% set _ = display_patterns.append(p) %}
+                  {% endif %}
+                {% endfor %}
+                {% if display_patterns %}
                 <div class="space-y-2">
-                    {% for pattern in window_patterns %}
+                    {% for pattern in display_patterns %}
                     <div class="bg-base-200 rounded-lg p-2 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-medium">{{ pattern.bucket_label }}</span>
+                            {# Consistency badge #}
                             {% if pattern.consistency_label == "Consistent" %}
-                            <span class="badge badge-success">Consistent</span>
+                            <span class="badge badge-success badge-sm">Consistent</span>
                             {% elif pattern.consistency_label == "Variable" %}
-                            <span class="badge badge-warning">Variable</span>
+                            <span class="badge badge-warning badge-sm">Variable</span>
                             {% else %}
-                            <span class="badge badge-ghost">Moderate</span>
+                            <span class="badge badge-ghost badge-sm">Moderate</span>
+                            {% endif %}
+                            {# Range status badge — new in Phase 8 #}
+                            {% if pattern.avg_glucose < 70 %}
+                            <span class="badge badge-error badge-sm">Below Range</span>
+                            {% elif pattern.avg_glucose > 180 %}
+                            <span class="badge badge-warning badge-sm">Above Range</span>
+                            {% else %}
+                            <span class="badge badge-success badge-outline badge-sm">In Range</span>
                             {% endif %}
                         </div>
                         <div class="text-right">
-                            <p class="text-sm text-base-content/70">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL</p>
-                            <details class="mt-1">
-                                <summary class="text-xs text-base-content/60 cursor-pointer">Show score</summary>
-                                <p class="text-xs text-base-content/50 mt-1">
-                                    Consistency score: {{ pattern.cv_score | round(1) }}% variation across days (lower = more consistent)
-                                </p>
-                                {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
-                                <p class="text-xs text-base-content/50">
-                                    Weekday avg: {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL &middot; Weekend avg: {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL
-                                </p>
-                                {% endif %}
-                            </details>
+                            <p class="text-sm font-bold">{{ pattern.avg_glucose | round(0) | int }} mg/dL</p>
+                            {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
+                            <p class="text-xs text-base-content/60">
+                                WD {{ pattern.weekday_avg_glucose | round(0) | int }} &middot;
+                                WE {{ pattern.weekend_avg_glucose | round(0) | int }}
+                            </p>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
