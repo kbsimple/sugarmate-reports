@@ -1,5 +1,7 @@
 # CGM Insights
 
+**Quick Start: [Analyze Your CGM Data →](https://sugarmate-reports.onrender.com)**
+
 Analyze your Continuous Glucose Monitor data and understand your glucose patterns. Upload a Sugarmate CSV export and get time-in-range metrics, behavioral patterns, overnight analysis, and unusual reading detection — all in wellness language, no medical advice.
 
 Available as a CLI tool, Python library, and web dashboard.
