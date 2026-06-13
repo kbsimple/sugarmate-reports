@@ -8,10 +8,12 @@ This module provides the main FastAPI application with:
 """
 
 import os
+import subprocess
+import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -64,6 +66,34 @@ from .routes import upload, results, export  # noqa: E402
 app.include_router(upload.router, tags=["upload"])
 app.include_router(results.router, tags=["results"])
 app.include_router(export.router, tags=["export"])
+
+
+def _git(cmd: str) -> str | None:
+    try:
+        return subprocess.check_output(
+            cmd.split(), cwd=BASE_DIR, stderr=subprocess.DEVNULL
+        ).decode().strip() or None
+    except Exception:
+        return None
+
+
+@app.get("/statusz")
+async def statusz(request: Request):
+    commit = os.environ.get("COMMIT_REF") or _git("git rev-parse HEAD") or "unknown"
+    raw_branch = _git("git rev-parse --abbrev-ref HEAD")
+    if raw_branch == "HEAD":
+        raw_branch = None
+    branch = os.environ.get("BRANCH") or os.environ.get("HEAD") or raw_branch or "unknown"
+    return templates.TemplateResponse(request, "statusz.html", {"info": {
+        "service": "cgm-insights",
+        "status": "ok",
+        "version": "0.1.0",
+        "commit": commit,
+        "commitShort": commit[:8] if commit != "unknown" else "unknown",
+        "branch": branch,
+        "context": os.environ.get("CONTEXT", "local"),
+        "python": sys.version,
+    }})
 
 
 @app.get("/")

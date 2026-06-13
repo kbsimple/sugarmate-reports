@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Status — CGM Insights{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Service Status</h1>
+    <div class="card bg-base-100 shadow">
+        <div class="card-body p-0">
+            <table class="table">
+                <tbody>
+                    <tr><th class="w-32 text-base-content/60">service</th><td>{{ info.service }}</td></tr>
+                    <tr><th class="text-base-content/60">status</th><td><span class="badge badge-success">{{ info.status }}</span></td></tr>
+                    <tr><th class="text-base-content/60">version</th><td>{{ info.version }}</td></tr>
+                    <tr><th class="text-base-content/60">commit</th><td class="font-mono text-sm">{{ info.commitShort }} <span class="text-base-content/40">({{ info.commit }})</span></td></tr>
+                    <tr><th class="text-base-content/60">branch</th><td class="font-mono text-sm">{{ info.branch }}</td></tr>
+                    <tr><th class="text-base-content/60">context</th><td>{{ info.context }}</td></tr>
+                    <tr><th class="text-base-content/60">python</th><td class="font-mono text-sm">{{ info.python }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
