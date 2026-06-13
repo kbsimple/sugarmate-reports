@@ -183,6 +183,7 @@ Last activity: 2026-06-12 - Completed quick task 260612-bh9: 7 report UI updates
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260612-bh9 | 7 UI updates: dismissable banner, weekday/weekend splits, hourly ToD, glucose trend avg overlay, behavioral colors | 2026-06-12 | a9c6d1b | [260612-bh9-report-ui-updates](./quick/260612-bh9-report-ui-updates/) |
+| 260612-fqs | Expandable time windows rows, daily TIR bar chart, behavioral patterns diurnal line chart | 2026-06-12 | f8fb221 | [260612-fqs-report-ui-updates-2](./quick/260612-fqs-report-ui-updates-2/) |
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
