@@ -185,21 +185,13 @@ function createGlucoseTrendChart(canvasId, data) {
     });
 }
 
-// ─── Time-of-Day patterns bar chart (with weekday/weekend toggle) ─────────────
-
-let todChart = null;
+// ─── Time-of-Day patterns: three inline bar charts (All / Weekdays / Weekends) ──
 
 function extractHourlyPatterns(bp) {
     if (!bp || bp.insufficient_data || !bp.patterns) return { hourly: [], hasWeekdaySplit: false };
     const hourly = bp.patterns.filter(p => p.window_size_min === 60 && p.bucket_start_minute % 60 === 0);
     const hasWeekdaySplit = hourly.some(p => p.weekday_avg_glucose !== null && p.weekend_avg_glucose !== null);
     return { hourly, hasWeekdaySplit };
-}
-
-function patternGlucoseForDayType(pattern, dayType) {
-    if (dayType === 'weekdays' && pattern.weekday_avg_glucose !== null) return pattern.weekday_avg_glucose;
-    if (dayType === 'weekends' && pattern.weekend_avg_glucose !== null) return pattern.weekend_avg_glucose;
-    return pattern.avg_glucose;
 }
 
 function glucoseBarColor(v) {
@@ -209,48 +201,11 @@ function glucoseBarColor(v) {
     return GLUCOSE_COLORS.very_high;
 }
 
-function updateToDChart(dayType) {
-    if (!todChart) return;
-    const bp = typeof behavioralPatterns !== 'undefined' ? behavioralPatterns : null;
-    const { hourly } = extractHourlyPatterns(bp);
-    if (!hourly.length) return;
-    const values = hourly.map(p => {
-        const v = patternGlucoseForDayType(p, dayType);
-        return v !== null ? Math.round(v * 10) / 10 : null;
-    });
-    todChart.data.datasets[0].data = values;
-    todChart.data.datasets[0].backgroundColor = values.map(v => v !== null ? glucoseBarColor(v) : 'transparent');
-    todChart.update();
-}
-
-function createDailyPatternsChart(canvasId, legacyPatterns, bp) {
+function _makeTodBarChart(canvasId, labels, values) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return null;
-
-    const { hourly, hasWeekdaySplit } = extractHourlyPatterns(bp);
-    const useBehavioral = hourly.length > 0;
-
-    let labels, values;
-    if (useBehavioral) {
-        labels = hourly.map(p => p.bucket_label);
-        values = hourly.map(p => Math.round(p.avg_glucose * 10) / 10);
-    } else {
-        if (!legacyPatterns || !legacyPatterns.length) return null;
-        const timePatterns = legacyPatterns.filter(p => p.type === 'time_of_day');
-        if (!timePatterns.length) return null;
-        timePatterns.sort((a, b) => (parseInt(a.time_period) || 0) - (parseInt(b.time_period) || 0));
-        labels = timePatterns.map(p => p.time_period);
-        values = timePatterns.map(p => p.avg_glucose);
-    }
-
-    const colors = values.map(glucoseBarColor);
-
-    if (!hasWeekdaySplit) {
-        const filter = document.getElementById('todDayTypeFilter');
-        if (filter) { filter.disabled = true; filter.title = 'Weekday/weekend split requires at least 5 days of data'; }
-    }
-
-    todChart = new Chart(ctx, {
+    const colors = values.map(v => v !== null ? glucoseBarColor(v) : 'transparent');
+    return new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
@@ -262,13 +217,12 @@ function createDailyPatternsChart(canvasId, legacyPatterns, bp) {
             scales: {
                 x: {
                     display: true,
-                    title: { display: true, text: 'Hour' },
                     grid: { display: false },
-                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 24 }
+                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }
                 },
                 y: {
                     min: 0, max: 300,
-                    title: { display: true, text: 'Average Glucose (mg/dL)' },
+                    title: { display: true, text: 'mg/dL' },
                     grid: { color: 'rgba(0,0,0,0.05)' }
                 }
             },
@@ -278,7 +232,41 @@ function createDailyPatternsChart(canvasId, legacyPatterns, bp) {
             }
         }
     });
-    return todChart;
+}
+
+function createDailyPatternCharts(legacyPatterns, bp) {
+    const { hourly, hasWeekdaySplit } = extractHourlyPatterns(bp);
+    const useBehavioral = hourly.length > 0;
+
+    let labels, allValues, weekdayValues, weekendValues;
+    if (useBehavioral) {
+        labels = hourly.map(p => p.bucket_label);
+        allValues = hourly.map(p => Math.round(p.avg_glucose * 10) / 10);
+        weekdayValues = hourly.map(p => p.weekday_avg_glucose !== null ? Math.round(p.weekday_avg_glucose * 10) / 10 : null);
+        weekendValues = hourly.map(p => p.weekend_avg_glucose !== null ? Math.round(p.weekend_avg_glucose * 10) / 10 : null);
+    } else {
+        if (!legacyPatterns || !legacyPatterns.length) return;
+        const timePatterns = legacyPatterns.filter(p => p.type === 'time_of_day');
+        if (!timePatterns.length) return;
+        timePatterns.sort((a, b) => (parseInt(a.time_period) || 0) - (parseInt(b.time_period) || 0));
+        labels = timePatterns.map(p => p.time_period);
+        allValues = timePatterns.map(p => p.avg_glucose);
+        weekdayValues = null;
+        weekendValues = null;
+    }
+
+    _makeTodBarChart('dailyPatternsChartAll', labels, allValues);
+
+    if (!hasWeekdaySplit || !weekdayValues || !weekendValues) {
+        const weekdaysCol = document.getElementById('todWeekdaysCol');
+        const weekendsCol = document.getElementById('todWeekendsCol');
+        if (weekdaysCol) weekdaysCol.style.display = 'none';
+        if (weekendsCol) weekendsCol.style.display = 'none';
+        return;
+    }
+
+    _makeTodBarChart('dailyPatternsChartWeekdays', labels, weekdayValues);
+    _makeTodBarChart('dailyPatternsChartWeekends', labels, weekendValues);
 }
 
 // ─── Behavioral Patterns: diurnal line chart ──────────────────────────────────
@@ -469,7 +457,7 @@ function initializeCharts() {
 
     const bp = typeof behavioralPatterns !== 'undefined' ? behavioralPatterns : null;
     const legacyPatterns = typeof patterns !== 'undefined' ? patterns : [];
-    createDailyPatternsChart('dailyPatternsChart', legacyPatterns, bp);
+    createDailyPatternCharts(legacyPatterns, bp);
     createBehavioralPatternsLineChart('behavioralPatternsChart', bp);
 }
 

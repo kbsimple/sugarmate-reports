@@ -300,7 +300,7 @@ class TestResultsTemplateRendering:
         body = response.text
         assert 'id="tirChart"' in body
         assert 'id="glucoseTrendChart"' in body
-        assert 'id="dailyPatternsChart"' in body
+        assert 'id="dailyPatternsChartAll"' in body
 
     def test_results_html_exposes_behavioral_patterns_js_global(self, test_client: TestClient, sample_session_id: str):
         """'behavioralPatterns' JS global must be serialized into the page for chart init."""

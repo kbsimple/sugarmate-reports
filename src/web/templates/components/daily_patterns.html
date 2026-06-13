@@ -2,26 +2,34 @@
 
 Parameters:
   - behavioral_patterns: dict from BehavioralAnalysisResult.model_dump(), or None.
-    When available, uses 60-min hourly behavioral data with weekday/weekend toggle.
+    When available, uses 60-min hourly behavioral data with all/weekday/weekend breakdown.
   - patterns: List of pattern objects (fallback when behavioral_patterns unavailable).
 #}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <h3 class="card-title text-lg">Time-of-Day Patterns</h3>
-            <select id="todDayTypeFilter"
-                    class="select select-bordered select-sm w-36"
-                    onchange="updateToDChart(this.value)">
-                <option value="all">All Days</option>
-                <option value="weekdays">Weekdays</option>
-                <option value="weekends">Weekends</option>
-            </select>
-        </div>
+        <h3 class="card-title text-lg mb-1">Time-of-Day Patterns</h3>
         <p class="text-sm text-base-content/60 mb-4">
             Average glucose levels by hour throughout the day, color-coded by glucose zone.
         </p>
-        <div class="chart-container" style="position: relative; height: 300px;">
-            <canvas id="dailyPatternsChart"></canvas>
+        <div id="todChartsGrid" class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div>
+                <p class="text-sm font-medium text-center text-base-content/70 mb-2">All Days</p>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="dailyPatternsChartAll"></canvas>
+                </div>
+            </div>
+            <div id="todWeekdaysCol">
+                <p class="text-sm font-medium text-center text-base-content/70 mb-2">Weekdays</p>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="dailyPatternsChartWeekdays"></canvas>
+                </div>
+            </div>
+            <div id="todWeekendsCol">
+                <p class="text-sm font-medium text-center text-base-content/70 mb-2">Weekends</p>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="dailyPatternsChartWeekends"></canvas>
+                </div>
+            </div>
         </div>
         <div class="flex flex-wrap gap-4 mt-4 justify-center text-sm">
             <div class="flex items-center gap-2">
