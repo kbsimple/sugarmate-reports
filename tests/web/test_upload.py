@@ -213,6 +213,50 @@ class TestUploadEndpoint:
         assert response.status_code in [200, 400, 422]
 
 
+class TestLoadingIndicator:
+    """Regression tests for the #loading-indicator overlay.
+
+    The indicator is shown/hidden via JS (showIndicator / hideIndicator).
+    Certain DaisyUI utility classes (e.g. 'modal') unconditionally set
+    opacity:0 and pointer-events:none via CSS, making the spinner invisible
+    even when display:flex is active.  These tests guard against that class
+    being re-added to the element.
+    """
+
+    def test_loading_indicator_present(self, test_client: TestClient):
+        """#loading-indicator element must exist in every page that extends base.html."""
+        response = test_client.get("/upload")
+        assert response.status_code == 200
+        assert 'id="loading-indicator"' in response.text
+
+    def test_loading_indicator_not_daisyui_modal(self, test_client: TestClient):
+        """Regression: DaisyUI .modal sets opacity:0 — must not appear on #loading-indicator."""
+        import re
+
+        response = test_client.get("/upload")
+        tag = re.search(r'<div\b[^>]+id="loading-indicator"[^>]*>', response.text)
+        assert tag, "#loading-indicator div not found in rendered page"
+
+        class_match = re.search(r'class="([^"]*)"', tag.group(0))
+        classes = class_match.group(1).split() if class_match else []
+
+        assert "modal" not in classes, (
+            "DaisyUI .modal applies opacity:0 and pointer-events:none unconditionally. "
+            "Remove 'modal' from #loading-indicator or the spinner will be invisible."
+        )
+
+    def test_loading_indicator_initially_hidden(self, test_client: TestClient):
+        """#loading-indicator must start hidden so it doesn't block the page on load."""
+        import re
+
+        response = test_client.get("/upload")
+        tag = re.search(r'<div\b[^>]+id="loading-indicator"[^>]*>', response.text)
+        assert tag, "#loading-indicator div not found"
+        assert 'display: none' in tag.group(0) or 'display:none' in tag.group(0), (
+            "#loading-indicator must have inline style='display: none' on page load"
+        )
+
+
 class TestDeepLink:
     """Tests for GET /upload?url= deep-link pre-fill."""
 
