@@ -1,16 +1,15 @@
 {# Out-of-Range Priority Insights component.
 Parameters:
   - behavioral_patterns: dict from BehavioralAnalysisResult.model_dump(), or None.
-    Renders nothing if None or if insufficient_data is True.
-    Renders nothing if no 60-min hourly-boundary patterns fall outside 70–180 mg/dL.
+    Renders nothing if None, insufficient_data is True, or no hourly OOR patterns found.
 Data source: 60-minute window patterns at hourly boundaries (bucket_start_minute % 60 == 0).
 Sections: Weekdays then Weekends (using weekday_avg_glucose / weekend_avg_glucose).
 Falls back to blended avg_glucose when weekday/weekend split is unavailable.
+Each row is expandable: click reveals per-date detail computed from glucoseReadings JS global.
 #}
 {% if behavioral_patterns and not behavioral_patterns.insufficient_data %}
 {% set window_patterns = behavioral_patterns.patterns
     | selectattr("window_size_min", "equalto", 60) | list %}
-{# Hourly boundaries only — avoids overlapping 5-min slide windows #}
 {% set hourly_patterns = [] %}
 {% for p in window_patterns %}
   {% if p.bucket_start_minute % 60 == 0 %}
@@ -18,7 +17,6 @@ Falls back to blended avg_glucose when weekday/weekend split is unavailable.
   {% endif %}
 {% endfor %}
 
-{# Check if weekday/weekend split is available (any pattern has non-null split) #}
 {% set has_split = [] %}
 {% for p in hourly_patterns %}
   {% if p.weekday_avg_glucose is not none and p.weekend_avg_glucose is not none %}
@@ -26,7 +24,6 @@ Falls back to blended avg_glucose when weekday/weekend split is unavailable.
   {% endif %}
 {% endfor %}
 
-{# Collect out-of-range patterns per day type #}
 {% set wd_above = [] %}
 {% set wd_below = [] %}
 {% set we_above = [] %}
@@ -57,100 +54,109 @@ Falls back to blended avg_glucose when weekday/weekend split is unavailable.
     <div class="card-body">
         <h3 class="card-title text-lg font-bold">Time Windows to Focus On</h3>
         <p class="text-sm text-base-content/60 mb-4">
-            These time windows consistently show glucose outside the 70–180 mg/dL range.
+            These time windows consistently show glucose outside the 70–180 mg/dL range. Click a row to see per-date details.
         </p>
 
+        {# ── Macro: render one expandable out-of-range row ── #}
+        {# avg_val and alert_class are passed in; bucket_start / window_min for JS detail lookup #}
+
+        {% macro oor_row(pattern, avg_val, alert_class, label_suffix) %}
+        <div x-data="{ open: false, details: null, bucketStart: {{ pattern.bucket_start_minute }}, windowMin: 60 }"
+             class="alert {{ alert_class }} flex-col items-stretch cursor-pointer select-none">
+            {# Summary row — click toggles detail #}
+            <div class="flex items-center justify-between flex-wrap gap-2 w-full"
+                 @click="open = !open; if (open && !details) details = computeWindowDetails(bucketStart, windowMin)">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="w-4 h-4 shrink-0 transition-transform duration-200"
+                         :class="{ 'rotate-90': open }"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span class="font-bold">{{ pattern.bucket_label }} — {{ label_suffix }}</span>
+                </div>
+                <span class="text-sm">
+                    avg {{ avg_val | round(0) | int }} mg/dL
+                    &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range
+                    &middot; {{ pattern.days_with_data }} days
+                </span>
+            </div>
+            {# Detail panel #}
+            <div x-show="open" x-transition class="w-full mt-2 pt-2 border-t border-current/20 text-sm"
+                 @click.stop>
+                <template x-if="!details">
+                    <p class="opacity-60 italic py-1">Loading...</p>
+                </template>
+                <template x-if="details && details.length === 0">
+                    <p class="opacity-60 italic py-1">No raw readings found for this window.</p>
+                </template>
+                <template x-if="details && details.length > 0">
+                    <div class="overflow-x-auto mt-1">
+                        <table class="table table-xs w-full">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-right">Avg</th>
+                                    <th class="text-right">Min</th>
+                                    <th class="text-right">Max</th>
+                                    <th class="text-right">Readings</th>
+                                    <th class="text-right">% In Range</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="row in details" :key="row.date">
+                                    <tr>
+                                        <td x-text="row.date"></td>
+                                        <td class="text-right" x-text="row.avgGlucose + ' mg/dL'"></td>
+                                        <td class="text-right" x-text="row.min + ' mg/dL'"></td>
+                                        <td class="text-right" x-text="row.max + ' mg/dL'"></td>
+                                        <td class="text-right" x-text="row.readings"></td>
+                                        <td class="text-right" x-text="row.pctInRange + '%'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+        </div>
+        {% endmacro %}
+
         {% if has_split %}
-        {# Split view: Weekdays and Weekends as primary grouping #}
         {% if wd_above or wd_below %}
         <h4 class="text-base font-bold mb-2">Weekdays</h4>
         <div class="space-y-2 mb-4 pl-2">
-          {% for pattern in wd_above %}
-          <div class="alert alert-warning">
-            <div class="flex-1">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
-                <span class="text-sm">avg {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          {% for pattern in wd_below %}
-          <div class="alert alert-error">
-            <div class="flex-1">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
-                <span class="text-sm">avg {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
+          {% for pattern in wd_above %}{{ oor_row(pattern, pattern.weekday_avg_glucose, "alert-warning", "Above Range") }}{% endfor %}
+          {% for pattern in wd_below %}{{ oor_row(pattern, pattern.weekday_avg_glucose, "alert-error", "Below Range") }}{% endfor %}
         </div>
         {% endif %}
 
         {% if we_above or we_below %}
         <h4 class="text-base font-bold mb-2">Weekends</h4>
         <div class="space-y-2 mb-4 pl-2">
-          {% for pattern in we_above %}
-          <div class="alert alert-warning">
-            <div class="flex-1">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
-                <span class="text-sm">avg {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          {% for pattern in we_below %}
-          <div class="alert alert-error">
-            <div class="flex-1">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
-                <span class="text-sm">avg {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
+          {% for pattern in we_above %}{{ oor_row(pattern, pattern.weekend_avg_glucose, "alert-warning", "Above Range") }}{% endfor %}
+          {% for pattern in we_below %}{{ oor_row(pattern, pattern.weekend_avg_glucose, "alert-error", "Below Range") }}{% endfor %}
         </div>
         {% endif %}
 
         {% else %}
-        {# Blended fallback when no weekday/weekend split available #}
         {% if blend_above %}
         <h4 class="text-sm font-semibold mb-2">Above Range</h4>
         <div class="space-y-2 mb-4">
-          {% for pattern in blend_above %}
-          <div class="alert alert-warning">
-            <div class="flex-1">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
-                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
+          {% for pattern in blend_above %}{{ oor_row(pattern, pattern.avg_glucose, "alert-warning", "Above Range") }}{% endfor %}
         </div>
         {% endif %}
         {% if blend_below %}
         <h4 class="text-sm font-semibold mb-2">Below Range</h4>
         <div class="space-y-2 mb-4">
-          {% for pattern in blend_below %}
-          <div class="alert alert-error">
-            <div class="flex-1">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
-                <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
+          {% for pattern in blend_below %}{{ oor_row(pattern, pattern.avg_glucose, "alert-error", "Below Range") }}{% endfor %}
         </div>
         {% endif %}
         {% endif %}
 
         <div class="bg-base-200 rounded-lg p-2 mt-2">
             <p class="text-xs text-base-content/60">
-                <strong>Wellness Information Only:</strong> These patterns and suggestions are for informational purposes and are not medical advice. Always discuss glucose management with your healthcare provider.
+                <strong>Wellness Information Only:</strong> These patterns are for informational purposes and are not medical advice. Always discuss glucose management with your healthcare provider.
             </p>
         </div>
     </div>

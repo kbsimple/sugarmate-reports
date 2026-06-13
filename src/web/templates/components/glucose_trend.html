@@ -1,22 +1,33 @@
-{# Glucose trend line chart component.
+{# Daily Time in Range chart component.
 
 Parameters:
-  - glucose_readings: List of {timestamp, glucose} objects for chart data
+  - glucose_readings: List of {timestamp, glucose} objects (from glucoseReadings JS global)
 #}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
-        <h3 class="card-title text-lg mb-4">Glucose Trend</h3>
+        <h3 class="card-title text-lg mb-1">Daily Time in Range</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+            Percentage of readings within target range (70–180 mg/dL) for each day.
+        </p>
         <div class="chart-container" style="position: relative; height: 300px;">
             <canvas id="glucoseTrendChart"></canvas>
         </div>
-        <div class="flex flex-wrap gap-4 mt-2 justify-center text-sm">
+        <div class="flex flex-wrap gap-4 mt-3 justify-center text-sm">
             <div class="flex items-center gap-2">
-                <span class="w-8 h-0.5 bg-success"></span>
-                <span>Glucose</span>
+                <span class="w-4 h-4 rounded" style="background:rgba(34,197,94,0.8)"></span>
+                <span>&ge;70% in range</span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="w-8 border-t-2 border-dashed border-indigo-500"></span>
-                <span>3-Week Avg (30-min)</span>
+                <span class="w-4 h-4 rounded" style="background:rgba(250,204,21,0.85)"></span>
+                <span>50–70% in range</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded" style="background:rgba(239,68,68,0.8)"></span>
+                <span>&lt;50% in range</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-8 border-t-2 border-dashed" style="border-color:rgba(34,197,94,0.6)"></span>
+                <span>70% target</span>
             </div>
         </div>
         {% if not glucose_readings or glucose_readings|length == 0 %}

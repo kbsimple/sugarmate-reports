@@ -1,100 +1,41 @@
-{# Behavioral Patterns tab component.
+{# Behavioral Patterns diurnal line chart.
 
 Parameters:
   - behavioral_patterns: dict from BehavioralAnalysisResult.model_dump(), or None.
     Keys: patterns (list of dicts), window_sizes (list of int), total_days (int),
           insufficient_data (bool).
   Each pattern dict has: window_size_min, bucket_start_minute, bucket_label,
-    consistency_label (str: "Consistent"|"Moderate"|"Variable"), cv_score (float),
-    avg_glucose (float), weekday_avg_glucose (float|null),
-    weekend_avg_glucose (float|null), days_with_data (int), reading_count (int).
+    consistency_label, cv_score, avg_glucose, weekday_avg_glucose,
+    weekend_avg_glucose, days_with_data, reading_count.
 #}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
-        <h3 class="card-title text-lg font-bold">Behavioral Patterns</h3>
+        <h3 class="card-title text-lg font-bold mb-1">Behavioral Patterns</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+            Average glucose at each hour of the day. The green band marks the 70–180 mg/dL target range.
+        </p>
 
         {% if not behavioral_patterns or behavioral_patterns.insufficient_data %}
-        {# Insufficient data state #}
         <div class="alert alert-info">
             <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
                 <h3 class="font-bold">Not enough data for behavioral patterns</h3>
-                <p class="text-sm mt-1">Behavioral patterns require at least 5 days of data in the selected date range. Upload a file covering more days to see time-of-day consistency patterns.</p>
+                <p class="text-sm mt-1">Behavioral patterns require at least 5 days of data. Upload a file covering more days to see time-of-day patterns.</p>
             </div>
         </div>
 
         {% else %}
-        {# Tab component — one tab per window size (30 / 60 / 120 min) #}
-        {% set window_sizes = behavioral_patterns.window_sizes %}
-        {% set all_patterns = behavioral_patterns.patterns %}
-
-        <div class="tabs tabs-bordered" role="tablist">
-            {% for window_min in window_sizes %}
-            {% set tab_checked = loop.first %}
-            <input type="radio" name="behavioral_tabs" role="tab"
-                   class="tab" aria-label="{{ window_min }} min"
-                   {% if tab_checked %}checked="checked"{% endif %} />
-            <div role="tabpanel" class="tab-content pt-4">
-                {% set window_patterns = all_patterns | selectattr("window_size_min", "equalto", window_min) | list %}
-                {# Density filter: show only non-overlapping boundary buckets to avoid overwhelming display #}
-                {% set display_patterns = [] %}
-                {% for p in window_patterns %}
-                  {% if p.bucket_start_minute % window_min == 0 %}
-                    {% set _ = display_patterns.append(p) %}
-                  {% endif %}
-                {% endfor %}
-                {% if display_patterns %}
-                <div class="space-y-2">
-                    {% for pattern in display_patterns %}
-                    <div class="bg-base-200 rounded-lg p-2 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-medium">{{ pattern.bucket_label }}</span>
-                            {# Consistency badge #}
-                            {% if pattern.consistency_label == "Consistent" %}
-                            <span class="badge badge-info badge-sm">Consistent</span>
-                            {% elif pattern.consistency_label == "Variable" %}
-                            <span class="badge badge-warning badge-sm">Variable</span>
-                            {% else %}
-                            <span class="badge badge-sm" style="background-color:#fef9c3;color:#854d0e;border-color:#fde68a">Moderate</span>
-                            {% endif %}
-                            {# Range status badge — new in Phase 8 #}
-                            {% if pattern.avg_glucose < 70 %}
-                            <span class="badge badge-error badge-sm">Below Range</span>
-                            {% elif pattern.avg_glucose > 180 %}
-                            <span class="badge badge-warning badge-sm">Above Range</span>
-                            {% else %}
-                            <span class="badge badge-success badge-outline badge-sm">In Range</span>
-                            {% endif %}
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold">{{ pattern.avg_glucose | round(0) | int }} mg/dL</p>
-                            {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
-                            <p class="text-xs text-base-content/60">
-                                WD {{ pattern.weekday_avg_glucose | round(0) | int }} &middot;
-                                WE {{ pattern.weekend_avg_glucose | round(0) | int }}
-                            </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-base-content/60 text-sm">No patterns with sufficient data for this window size.</p>
-                {% endif %}
-            </div>
-            {% endfor %}
+        <div class="chart-container" style="position: relative; height: 300px;">
+            <canvas id="behavioralPatternsChart"></canvas>
         </div>
+        {% endif %}
 
-        {% endif %}{# end if not insufficient_data #}
-
-        {# Wellness disclaimer — always shown #}
         <div class="bg-base-200 rounded-lg p-2 mt-4">
             <p class="text-xs text-base-content/60">
-                <strong>Wellness Information Only:</strong> These patterns and suggestions are for informational purposes and are not medical advice. Always discuss glucose management with your healthcare provider.
+                <strong>Wellness Information Only:</strong> These patterns are for informational purposes and are not medical advice. Always discuss glucose management with your healthcare provider.
             </p>
         </div>
-
     </div>
 </div>

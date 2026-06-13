@@ -1,37 +1,31 @@
 /**
  * Chart.js initialization and configuration for CGM Insights.
  *
- * Provides functions to create:
+ * Provides:
  * - Time in Range doughnut chart
- * - Glucose trend line chart (with 3-week diurnal average overlay)
- * - Time-of-Day patterns bar chart (hourly, with weekday/weekend toggle)
+ * - Glucose Trend: daily % in-range bar chart
+ * - Time-of-Day patterns bar chart (hourly, weekday/weekend toggle)
+ * - Behavioral Patterns diurnal line chart
+ * - computeWindowDetails() for expandable Time Windows rows
  */
 
 // Glucose zone colors (matching clinical standards)
 const GLUCOSE_COLORS = {
-    very_low: '#ef4444',    // red - severe hypoglycemia
-    low: '#f87171',        // light red - hypoglycemia
-    target: '#22c55e',     // green - euglycemia
-    high: '#facc15',       // yellow - hyperglycemia
-    very_high: '#f97316',  // orange - severe hyperglycemia
+    very_low: '#ef4444',
+    low: '#f87171',
+    target: '#22c55e',
+    high: '#facc15',
+    very_high: '#f97316',
 };
 
-// Chart.js default options
 Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
 Chart.defaults.color = '#6b7280';
 
-/**
- * Create a Time in Range doughnut chart.
- *
- * @param {string} canvasId - Canvas element ID
- * @param {Object} data - TIR data with very_low, low, target, high, very_high percentages
- */
+// ─── TIR Doughnut ────────────────────────────────────────────────────────────
+
 function createTIRChart(canvasId, data) {
     const ctx = document.getElementById(canvasId);
-    if (!ctx) {
-        console.error('Canvas not found:', canvasId);
-        return null;
-    }
+    if (!ctx) return null;
 
     return new Chart(ctx, {
         type: 'doughnut',
@@ -67,14 +61,10 @@ function createTIRChart(canvasId, data) {
             maintainAspectRatio: true,
             cutout: '60%',
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return `${context.label}: ${context.raw.toFixed(1)}%`;
-                        }
+                        label: (ctx) => `${ctx.label}: ${ctx.raw.toFixed(1)}%`
                     }
                 }
             }
@@ -82,304 +72,81 @@ function createTIRChart(canvasId, data) {
     });
 }
 
+// ─── Glucose Trend: daily % in-range bar chart ────────────────────────────────
+
 /**
- * Compute per-30-minute bucket averages from glucose readings over the last N days.
+ * Group raw glucose readings by calendar date and compute daily % in-range.
  *
- * @param {Array} sortedData - Sorted array of {timestamp, glucose} objects
- * @param {number} days - How many trailing days to include (default 21 = 3 weeks)
- * @returns {number[]} Array of 48 averages (null if no data for that bucket)
+ * @param {Array} readings - Array of {timestamp, glucose}
+ * @returns {Array} Sorted array of {date, pctInRange, total, inRange}
  */
-function computeDiurnalAverages(sortedData, days = 21) {
-    if (!sortedData || sortedData.length === 0) return new Array(48).fill(null);
-
-    const latestTs = new Date(sortedData[sortedData.length - 1].timestamp);
-    const cutoff = new Date(latestTs);
-    cutoff.setDate(cutoff.getDate() - days);
-
-    const sums = new Array(48).fill(0);
-    const counts = new Array(48).fill(0);
-
-    for (const d of sortedData) {
-        const ts = new Date(d.timestamp);
-        if (ts < cutoff) continue;
-        const bucket = ts.getHours() * 2 + (ts.getMinutes() >= 30 ? 1 : 0);
-        sums[bucket] += d.glucose;
-        counts[bucket]++;
+function computeDailyTIR(readings) {
+    const byDate = {};
+    for (const r of readings) {
+        const dateStr = new Date(r.timestamp).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric'
+        });
+        if (!byDate[dateStr]) byDate[dateStr] = { total: 0, inRange: 0, ts: new Date(r.timestamp) };
+        byDate[dateStr].total++;
+        if (r.glucose >= 70 && r.glucose <= 180) byDate[dateStr].inRange++;
     }
-
-    return sums.map((sum, i) => (counts[i] > 0 ? sum / counts[i] : null));
+    return Object.entries(byDate)
+        .sort(([, a], [, b]) => a.ts - b.ts)
+        .map(([date, v]) => ({
+            date,
+            pctInRange: Math.round(v.inRange / v.total * 100),
+            total: v.total,
+            inRange: v.inRange
+        }));
 }
 
-/**
- * Create a glucose trend line chart with a 3-week diurnal average overlay.
- *
- * @param {string} canvasId - Canvas element ID
- * @param {Array} data - Array of {timestamp, glucose} objects
- */
 function createGlucoseTrendChart(canvasId, data) {
     const ctx = document.getElementById(canvasId);
-    if (!ctx) {
-        console.error('Canvas not found:', canvasId);
-        return null;
-    }
+    if (!ctx) return null;
+    if (!data || data.length === 0) return null;
 
-    if (!data || data.length === 0) {
-        console.warn('No glucose data provided');
-        return null;
-    }
+    const daily = computeDailyTIR(data);
+    if (daily.length === 0) return null;
 
-    // Sort data by timestamp
-    const sortedData = [...data].sort((a, b) =>
-        new Date(a.timestamp) - new Date(b.timestamp)
+    const labels = daily.map(d => d.date);
+    const values = daily.map(d => d.pctInRange);
+
+    // Color each bar: green ≥70%, yellow 50-70%, red <50%
+    const colors = values.map(v =>
+        v >= 70 ? 'rgba(34,197,94,0.8)' :
+        v >= 50 ? 'rgba(250,204,21,0.85)' :
+                  'rgba(239,68,68,0.8)'
     );
 
-    // Prepare chart data
-    const labels = sortedData.map(d => {
-        const date = new Date(d.timestamp);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-               ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    });
-    const glucoseValues = sortedData.map(d => d.glucose);
-
-    // Compute 3-week diurnal bucket averages and map back to each timestamp
-    const bucketAvgs = computeDiurnalAverages(sortedData, 21);
-    const avgOverlay = sortedData.map(d => {
-        const ts = new Date(d.timestamp);
-        const bucket = ts.getHours() * 2 + (ts.getMinutes() >= 30 ? 1 : 0);
-        return bucketAvgs[bucket] !== null ? Math.round(bucketAvgs[bucket] * 10) / 10 : null;
-    });
+    // Dashed 70% reference line via custom plugin
+    const refLinePlugin = {
+        id: 'refLine70',
+        afterDatasetsDraw(chart) {
+            const { ctx: c, scales: { y }, chartArea: { left, right } } = chart;
+            const yPx = y.getPixelForValue(70);
+            c.save();
+            c.strokeStyle = 'rgba(34,197,94,0.6)';
+            c.lineWidth = 1.5;
+            c.setLineDash([6, 4]);
+            c.beginPath();
+            c.moveTo(left, yPx);
+            c.lineTo(right, yPx);
+            c.stroke();
+            c.restore();
+        }
+    };
 
     return new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Glucose (mg/dL)',
-                    data: glucoseValues,
-                    borderColor: GLUCOSE_COLORS.target,
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    borderWidth: 1.5,
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHoverBackgroundColor: GLUCOSE_COLORS.target,
-                    order: 2
-                },
-                {
-                    label: '3-Week Avg (30-min)',
-                    data: avgOverlay,
-                    borderColor: 'rgba(99, 102, 241, 0.85)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 3,
-                    borderDash: [5, 3],
-                    order: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            scales: {
-                x: {
-                    display: true,
-                    ticks: {
-                        maxRotation: 45,
-                        autoSkip: true,
-                        maxTicksLimit: 10
-                    },
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    display: true,
-                    min: 40,
-                    max: 400,
-                    title: {
-                        display: true,
-                        text: 'Glucose (mg/dL)'
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        boxWidth: 20,
-                        padding: 12,
-                        usePointStyle: false
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            if (context.datasetIndex === 0) {
-                                return `Glucose: ${context.raw} mg/dL`;
-                            }
-                            return context.raw !== null
-                                ? `3-Wk Avg: ${context.raw} mg/dL`
-                                : null;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Module-level reference to the Time-of-Day chart instance for updates
-let todChart = null;
-
-/**
- * Extract hourly (60-min boundary) patterns from behavioral_patterns, keyed by day type.
- *
- * @param {Object|null} bp - behavioralPatterns global (may be null)
- * @returns {Object} { hourly: Array, hasWeekdaySplit: boolean }
- */
-function extractHourlyPatterns(bp) {
-    if (!bp || bp.insufficient_data || !bp.patterns) {
-        return { hourly: [], hasWeekdaySplit: false };
-    }
-
-    const hourly = bp.patterns.filter(p =>
-        p.window_size_min === 60 && p.bucket_start_minute % 60 === 0
-    );
-
-    const hasWeekdaySplit = hourly.some(
-        p => p.weekday_avg_glucose !== null && p.weekend_avg_glucose !== null
-    );
-
-    return { hourly, hasWeekdaySplit };
-}
-
-/**
- * Get the glucose value for a pattern given the current day type filter.
- *
- * @param {Object} pattern
- * @param {string} dayType - 'all' | 'weekdays' | 'weekends'
- * @returns {number|null}
- */
-function patternGlucoseForDayType(pattern, dayType) {
-    if (dayType === 'weekdays' && pattern.weekday_avg_glucose !== null) {
-        return pattern.weekday_avg_glucose;
-    }
-    if (dayType === 'weekends' && pattern.weekend_avg_glucose !== null) {
-        return pattern.weekend_avg_glucose;
-    }
-    return pattern.avg_glucose;
-}
-
-/**
- * Color a bar based on glucose value.
- */
-function glucoseBarColor(v) {
-    if (v < 70) return GLUCOSE_COLORS.low;
-    if (v <= 180) return GLUCOSE_COLORS.target;
-    if (v <= 250) return GLUCOSE_COLORS.high;
-    return GLUCOSE_COLORS.very_high;
-}
-
-/**
- * Update the Time-of-Day chart dataset when the day-type filter changes.
- *
- * @param {string} dayType - 'all' | 'weekdays' | 'weekends'
- */
-function updateToDChart(dayType) {
-    if (!todChart) return;
-
-    const bp = typeof behavioralPatterns !== 'undefined' ? behavioralPatterns : null;
-    const { hourly } = extractHourlyPatterns(bp);
-
-    if (hourly.length === 0) return;
-
-    const values = hourly.map(p => {
-        const v = patternGlucoseForDayType(p, dayType);
-        return v !== null ? Math.round(v * 10) / 10 : null;
-    });
-
-    todChart.data.datasets[0].data = values;
-    todChart.data.datasets[0].backgroundColor = values.map(v =>
-        v !== null ? glucoseBarColor(v) : 'transparent'
-    );
-    todChart.update();
-}
-
-/**
- * Create the Time-of-Day patterns bar chart.
- * Uses 60-min hourly behavioral patterns when available; falls back to legacy pattern data.
- *
- * @param {string} canvasId - Canvas element ID
- * @param {Array} legacyPatterns - Fallback array of time_of_day pattern objects
- * @param {Object|null} bp - behavioralPatterns data (may be null)
- */
-function createDailyPatternsChart(canvasId, legacyPatterns, bp) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) {
-        console.error('Canvas not found:', canvasId);
-        return null;
-    }
-
-    const { hourly, hasWeekdaySplit } = extractHourlyPatterns(bp);
-
-    // Prefer behavioral hourly patterns; fall back to legacy
-    const useBehavioral = hourly.length > 0;
-
-    let labels, values;
-
-    if (useBehavioral) {
-        labels = hourly.map(p => p.bucket_label);
-        values = hourly.map(p => Math.round(p.avg_glucose * 10) / 10);
-    } else {
-        if (!legacyPatterns || legacyPatterns.length === 0) {
-            console.warn('No pattern data provided');
-            return null;
-        }
-        const timePatterns = legacyPatterns.filter(p => p.type === 'time_of_day');
-        if (timePatterns.length === 0) return null;
-        timePatterns.sort((a, b) => {
-            const timeA = parseInt(a.time_period.split('-')[0]) || 0;
-            const timeB = parseInt(b.time_period.split('-')[0]) || 0;
-            return timeA - timeB;
-        });
-        labels = timePatterns.map(p => p.time_period);
-        values = timePatterns.map(p => p.avg_glucose);
-    }
-
-    const colors = values.map(v => glucoseBarColor(v));
-
-    // Disable the filter dropdown if no weekday/weekend split is available
-    if (!hasWeekdaySplit) {
-        const filter = document.getElementById('todDayTypeFilter');
-        if (filter) {
-            filter.disabled = true;
-            filter.title = 'Weekday/weekend split requires at least 5 days of data';
-        }
-    }
-
-    todChart = new Chart(ctx, {
         type: 'bar',
+        plugins: [refLinePlugin],
         data: {
-            labels: labels,
+            labels,
             datasets: [{
-                label: 'Average Glucose (mg/dL)',
+                label: '% In Range',
                 data: values,
                 backgroundColor: colors,
                 borderWidth: 0,
-                borderRadius: 4
+                borderRadius: 3
             }]
         },
         options: {
@@ -387,54 +154,299 @@ function createDailyPatternsChart(canvasId, legacyPatterns, bp) {
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Hour'
-                    },
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        maxRotation: 45,
-                        autoSkip: true,
-                        maxTicksLimit: 24
-                    }
+                    grid: { display: false },
+                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 20 }
                 },
                 y: {
-                    display: true,
-                    min: 0,
-                    max: 300,
-                    title: {
-                        display: true,
-                        text: 'Average Glucose (mg/dL)'
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
+                    min: 0, max: 100,
+                    title: { display: true, text: '% Time in Range (70-180)' },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
                 }
             },
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return [`Average: ${context.raw} mg/dL`];
+                        label: (ctx) => {
+                            const d = daily[ctx.dataIndex];
+                            return [
+                                `In range: ${ctx.raw}%`,
+                                `Readings: ${d.inRange} / ${d.total}`
+                            ];
                         }
                     }
                 }
             }
         }
     });
+}
 
+// ─── Time-of-Day patterns bar chart (with weekday/weekend toggle) ─────────────
+
+let todChart = null;
+
+function extractHourlyPatterns(bp) {
+    if (!bp || bp.insufficient_data || !bp.patterns) return { hourly: [], hasWeekdaySplit: false };
+    const hourly = bp.patterns.filter(p => p.window_size_min === 60 && p.bucket_start_minute % 60 === 0);
+    const hasWeekdaySplit = hourly.some(p => p.weekday_avg_glucose !== null && p.weekend_avg_glucose !== null);
+    return { hourly, hasWeekdaySplit };
+}
+
+function patternGlucoseForDayType(pattern, dayType) {
+    if (dayType === 'weekdays' && pattern.weekday_avg_glucose !== null) return pattern.weekday_avg_glucose;
+    if (dayType === 'weekends' && pattern.weekend_avg_glucose !== null) return pattern.weekend_avg_glucose;
+    return pattern.avg_glucose;
+}
+
+function glucoseBarColor(v) {
+    if (v < 70) return GLUCOSE_COLORS.low;
+    if (v <= 180) return GLUCOSE_COLORS.target;
+    if (v <= 250) return GLUCOSE_COLORS.high;
+    return GLUCOSE_COLORS.very_high;
+}
+
+function updateToDChart(dayType) {
+    if (!todChart) return;
+    const bp = typeof behavioralPatterns !== 'undefined' ? behavioralPatterns : null;
+    const { hourly } = extractHourlyPatterns(bp);
+    if (!hourly.length) return;
+    const values = hourly.map(p => {
+        const v = patternGlucoseForDayType(p, dayType);
+        return v !== null ? Math.round(v * 10) / 10 : null;
+    });
+    todChart.data.datasets[0].data = values;
+    todChart.data.datasets[0].backgroundColor = values.map(v => v !== null ? glucoseBarColor(v) : 'transparent');
+    todChart.update();
+}
+
+function createDailyPatternsChart(canvasId, legacyPatterns, bp) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+
+    const { hourly, hasWeekdaySplit } = extractHourlyPatterns(bp);
+    const useBehavioral = hourly.length > 0;
+
+    let labels, values;
+    if (useBehavioral) {
+        labels = hourly.map(p => p.bucket_label);
+        values = hourly.map(p => Math.round(p.avg_glucose * 10) / 10);
+    } else {
+        if (!legacyPatterns || !legacyPatterns.length) return null;
+        const timePatterns = legacyPatterns.filter(p => p.type === 'time_of_day');
+        if (!timePatterns.length) return null;
+        timePatterns.sort((a, b) => (parseInt(a.time_period) || 0) - (parseInt(b.time_period) || 0));
+        labels = timePatterns.map(p => p.time_period);
+        values = timePatterns.map(p => p.avg_glucose);
+    }
+
+    const colors = values.map(glucoseBarColor);
+
+    if (!hasWeekdaySplit) {
+        const filter = document.getElementById('todDayTypeFilter');
+        if (filter) { filter.disabled = true; filter.title = 'Weekday/weekend split requires at least 5 days of data'; }
+    }
+
+    todChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{ label: 'Average Glucose (mg/dL)', data: values, backgroundColor: colors, borderWidth: 0, borderRadius: 4 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: true,
+                    title: { display: true, text: 'Hour' },
+                    grid: { display: false },
+                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 24 }
+                },
+                y: {
+                    min: 0, max: 300,
+                    title: { display: true, text: 'Average Glucose (mg/dL)' },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => [`Average: ${ctx.raw} mg/dL`] } }
+            }
+        }
+    });
     return todChart;
 }
 
+// ─── Behavioral Patterns: diurnal line chart ──────────────────────────────────
+
 /**
- * Initialize all charts on page load.
+ * Draw target-range band (70-180) behind the behavioral patterns chart.
  */
+const targetBandPlugin = {
+    id: 'targetBand',
+    beforeDatasetsDraw(chart) {
+        const { ctx: c, scales: { y }, chartArea: { left, right } } = chart;
+        if (!y) return;
+        const y70 = y.getPixelForValue(70);
+        const y180 = y.getPixelForValue(180);
+        c.save();
+        c.fillStyle = 'rgba(34,197,94,0.08)';
+        c.fillRect(left, y180, right - left, y70 - y180);
+        c.restore();
+    }
+};
+
+function createBehavioralPatternsLineChart(canvasId, bp) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    if (!bp || bp.insufficient_data || !bp.patterns) return null;
+
+    const hourly = bp.patterns
+        .filter(p => p.window_size_min === 60 && p.bucket_start_minute % 60 === 0)
+        .sort((a, b) => a.bucket_start_minute - b.bucket_start_minute);
+
+    if (!hourly.length) return null;
+
+    // x-axis labels: short hour labels ("12am", "6am", etc.)
+    const labels = hourly.map(p => {
+        const h = Math.floor(p.bucket_start_minute / 60);
+        if (h === 0) return '12am';
+        if (h < 12) return `${h}am`;
+        if (h === 12) return '12pm';
+        return `${h - 12}pm`;
+    });
+
+    const allValues = hourly.map(p => Math.round(p.avg_glucose * 10) / 10);
+    const hasWeekdaySplit = hourly.some(p => p.weekday_avg_glucose !== null && p.weekend_avg_glucose !== null);
+
+    const datasets = [
+        {
+            label: 'All Days',
+            data: allValues,
+            borderColor: 'rgba(99,102,241,0.9)',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            order: 1
+        }
+    ];
+
+    if (hasWeekdaySplit) {
+        datasets.push({
+            label: 'Weekdays',
+            data: hourly.map(p => p.weekday_avg_glucose !== null ? Math.round(p.weekday_avg_glucose * 10) / 10 : null),
+            borderColor: 'rgba(59,130,246,0.75)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [4, 3],
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            order: 2
+        });
+        datasets.push({
+            label: 'Weekends',
+            data: hourly.map(p => p.weekend_avg_glucose !== null ? Math.round(p.weekend_avg_glucose * 10) / 10 : null),
+            borderColor: 'rgba(245,158,11,0.8)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [4, 3],
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            order: 3
+        });
+    }
+
+    return new Chart(ctx, {
+        type: 'line',
+        plugins: [targetBandPlugin],
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            scales: {
+                x: {
+                    display: true,
+                    title: { display: true, text: 'Time of Day' },
+                    grid: { display: false }
+                },
+                y: {
+                    display: true,
+                    min: 40, max: 350,
+                    title: { display: true, text: 'Average Glucose (mg/dL)' },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { boxWidth: 20, padding: 12 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ctx.raw !== null ? `${ctx.dataset.label}: ${ctx.raw} mg/dL` : null
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ─── Per-date window detail (for expandable Time Windows rows) ─────────────────
+
+/**
+ * Compute per-date glucose stats for a specific time window from raw readings.
+ * Called by Alpine.js on row expand.
+ *
+ * @param {number} bucketStart - minutes from midnight (e.g. 480 for 8:00am)
+ * @param {number} windowMin   - window duration in minutes (e.g. 60)
+ * @returns {Array} sorted array of {date, avgGlucose, readings, min, max, pctInRange}
+ */
+function computeWindowDetails(bucketStart, windowMin) {
+    const readings = typeof glucoseReadings !== 'undefined' ? glucoseReadings : [];
+    if (!readings.length) return [];
+
+    const bucketEnd = bucketStart + windowMin;
+    const byDate = {};
+
+    for (const r of readings) {
+        const ts = new Date(r.timestamp);
+        const mod = ts.getHours() * 60 + ts.getMinutes();
+        const inBucket = bucketEnd <= 1440
+            ? mod >= bucketStart && mod < bucketEnd
+            : mod >= bucketStart || mod < (bucketEnd - 1440);
+        if (!inBucket) continue;
+
+        // Key by full date for sorting; display as short label
+        const isoDate = ts.toISOString().slice(0, 10);
+        const dispDate = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (!byDate[isoDate]) byDate[isoDate] = { dispDate, values: [] };
+        byDate[isoDate].values.push(r.glucose);
+    }
+
+    return Object.entries(byDate)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([, { dispDate, values }]) => {
+            const avg = Math.round(values.reduce((s, v) => s + v, 0) / values.length);
+            const inRange = values.filter(v => v >= 70 && v <= 180).length;
+            return {
+                date: dispDate,
+                avgGlucose: avg,
+                readings: values.length,
+                min: Math.round(Math.min(...values)),
+                max: Math.round(Math.max(...values)),
+                pctInRange: Math.round(inRange / values.length * 100)
+            };
+        });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
 function initializeCharts() {
     if (typeof tirData !== 'undefined' && tirData) {
         createTIRChart('tirChart', tirData);
@@ -447,9 +459,9 @@ function initializeCharts() {
     const bp = typeof behavioralPatterns !== 'undefined' ? behavioralPatterns : null;
     const legacyPatterns = typeof patterns !== 'undefined' ? patterns : [];
     createDailyPatternsChart('dailyPatternsChart', legacyPatterns, bp);
+    createBehavioralPatternsLineChart('behavioralPatternsChart', bp);
 }
 
-// Initialize charts when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
 });
