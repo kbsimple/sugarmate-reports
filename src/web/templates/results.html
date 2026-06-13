@@ -93,6 +93,13 @@
         {% endwith %}
     </div>
 
+    <!-- Daily Patterns Chart -->
+    <div class="mb-6">
+        {% with behavioral_patterns=behavioral_patterns %}
+        {% include 'components/daily_patterns.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Out-of-Range Priority Insights (Time Windows to Focus On) -->
     <div class="mb-6">
         {% with behavioral_patterns=behavioral_patterns %}
@@ -103,13 +110,6 @@
     <!-- Glucose Trend Chart -->
     <div class="mb-6">
         {% include 'components/glucose_trend.html' %}
-    </div>
-
-    <!-- Daily Patterns Chart -->
-    <div class="mb-6">
-        {% with behavioral_patterns=behavioral_patterns %}
-        {% include 'components/daily_patterns.html' %}
-        {% endwith %}
     </div>
 
     <!-- Behavioral Patterns (Phase 4) -->
