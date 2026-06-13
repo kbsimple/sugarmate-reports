@@ -84,8 +84,8 @@ function computeDailyTIR(readings) {
     const byDate = {};
     for (const r of readings) {
         const ts = new Date(r.timestamp);
-        // Use ISO date as key for stable grouping; derive display label separately
-        const isoKey = ts.toISOString().slice(0, 10);
+        // Use LOCAL calendar date as key — toISOString() shifts to UTC and misgroups late-night readings
+        const isoKey = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}-${String(ts.getDate()).padStart(2,'0')}`;
         const dateStr = ts.toLocaleDateString('en-US', {
             weekday: 'short', month: 'short', day: 'numeric'
         });

@@ -64,7 +64,8 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
         <div x-data="{ open: false, details: null, bucketStart: {{ pattern.bucket_start_minute }}, windowMin: 60 }"
              class="alert {{ alert_class }} flex-col items-stretch cursor-pointer select-none">
             {# Summary row — click toggles detail #}
-            <div class="flex items-center justify-between flex-wrap gap-2 w-full"
+            <div class="flex w-full gap-2"
+                 :class="open ? 'flex-col items-start' : 'flex-row items-center justify-between flex-wrap'"
                  @click="open = !open; if (open && !details) details = computeWindowDetails(bucketStart, windowMin)">
                 <div class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -75,7 +76,7 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
                     </svg>
                     <span class="font-bold">{{ pattern.bucket_label }} — {{ label_suffix }}</span>
                 </div>
-                <span class="text-sm">
+                <span class="text-sm" :class="open ? 'ml-6' : ''">
                     avg {{ avg_val | round(0) | int }} mg/dL
                     &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range
                     &middot; {{ pattern.days_with_data }} days
@@ -95,7 +96,7 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
                         <table class="table table-xs w-full">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th class="whitespace-nowrap">Date</th>
                                     <th class="text-right">Avg</th>
                                     <th class="text-right">Min</th>
                                     <th class="text-right">Max</th>
@@ -106,7 +107,7 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
                             <tbody>
                                 <template x-for="row in details" :key="row.date">
                                     <tr>
-                                        <td x-text="row.date"></td>
+                                        <td class="whitespace-nowrap" x-text="row.date"></td>
                                         <td class="text-right" x-text="row.avgGlucose + ' mg/dL'"></td>
                                         <td class="text-right" x-text="row.min + ' mg/dL'"></td>
                                         <td class="text-right" x-text="row.max + ' mg/dL'"></td>
