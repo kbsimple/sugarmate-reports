@@ -88,6 +88,9 @@ def calculate_metrics(
         glucose_std=_safe_float(stats.get("std", 0)),
         cv_pct=_safe_float(stats.get("cv", 0)),
         gmi=_safe_float(stats.get("gmi", 0)),
+        p50_glucose=_safe_float(stats.get("p50", 0)),
+        p70_glucose=_safe_float(stats.get("p70", 0)),
+        p90_glucose=_safe_float(stats.get("p90", 0)),
         data_quality_flags=validation_result.quality_flags if validation_result else [],
         sensor_warmup_excluded=True,  # Assuming warmup excluded during parsing
         completeness_pct=validation_result.completeness_pct if validation_result else 100.0,
@@ -161,6 +164,16 @@ def _calculate_metrics_from_values(glucose_values: list[float]) -> dict:
     # GMI = 3.31 + 0.02392 * mean_glucose (mg/dL)
     gmi = 3.31 + 0.02392 * mean
 
+    # Percentiles via linear interpolation
+    sorted_vals = sorted(glucose_values)
+
+    def _percentile(pct: float) -> float:
+        if n == 1:
+            return sorted_vals[0]
+        idx = pct / 100 * (n - 1)
+        lo, hi = int(idx), min(int(idx) + 1, n - 1)
+        return sorted_vals[lo] + (idx - lo) * (sorted_vals[hi] - sorted_vals[lo])
+
     return {
         "mean": mean,
         "std": std,
@@ -174,4 +187,7 @@ def _calculate_metrics_from_values(glucose_values: list[float]) -> dict:
         "time_in_range": target,
         "time_above_range": high + very_high,
         "gmi": gmi,
+        "p50": _percentile(50),
+        "p70": _percentile(70),
+        "p90": _percentile(90),
     }

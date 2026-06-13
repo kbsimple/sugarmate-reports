@@ -62,11 +62,11 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
 
         {% macro oor_row(pattern, avg_val, alert_class, label_suffix, day_type='all') %}
         <div x-data="{ open: false, details: null, bucketStart: {{ pattern.bucket_start_minute }}, windowMin: 60, dayType: '{{ day_type }}' }"
-             class="alert {{ alert_class }} flex-col items-stretch cursor-pointer select-none">
-            {# Summary row — click toggles detail #}
+             class="alert {{ alert_class }} flex-col items-stretch cursor-pointer select-none"
+             @click="open = !open; if (open && !details) details = computeWindowDetails(bucketStart, windowMin, dayType)">
+            {# Summary row #}
             <div class="flex w-full gap-2"
-                 :class="open ? 'flex-col items-start' : 'flex-row items-center justify-between flex-wrap'"
-                 @click="open = !open; if (open && !details) details = computeWindowDetails(bucketStart, windowMin, dayType)">
+                 :class="open ? 'flex-col items-start' : 'flex-row items-center justify-between flex-wrap'">
                 <div class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg"
                          class="w-4 h-4 shrink-0 transition-transform duration-200"

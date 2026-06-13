@@ -149,6 +149,11 @@ class AnalysisResults(BaseModel):
         description="Glucose Management Indicator (estimated A1C)"
     )
 
+    # Glucose percentiles
+    p50_glucose: float = Field(0.0, ge=0, description="50th percentile glucose (mg/dL)")
+    p70_glucose: float = Field(0.0, ge=0, description="70th percentile glucose (mg/dL)")
+    p90_glucose: float = Field(0.0, ge=0, description="90th percentile glucose (mg/dL)")
+
     # Quality metadata
     data_quality_flags: list[QualityFlag] = Field(
         default_factory=list,

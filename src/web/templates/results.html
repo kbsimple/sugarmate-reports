@@ -67,23 +67,30 @@
         {% include 'components/metrics_card.html' %}
         {% endwith %}
 
+        <div class="card bg-base-100 shadow-md metric-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-sm font-medium text-base-content/70">Glucose Percentiles</h3>
+                <div class="mt-2 space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">p50</span>
+                        <span class="font-medium">{{ results.p50_glucose|round(0)|int }} mg/dL</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">p70</span>
+                        <span class="font-medium">{{ results.p70_glucose|round(0)|int }} mg/dL</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">p90</span>
+                        <span class="font-medium">{{ results.p90_glucose|round(0)|int }} mg/dL</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {% set cv_status = "good" if results.cv_pct < 36 else ("warning" if results.cv_pct < 45 else "bad") %}
         {% with title="Glucose Variability (CV)", value=results.cv_pct|round(1), unit="%", target_range="<36%", status=cv_status, description="Coefficient of variation" %}
         {% include 'components/metrics_card.html' %}
         {% endwith %}
-
-        {% set gmi_status = "good" if results.gmi < 7 else ("warning" if results.gmi < 8 else "bad") %}
-        {% with title="GMI", value=results.gmi|round(1), unit="%", status=gmi_status, description="Estimated A1C" %}
-        {% include 'components/metrics_card.html' %}
-        {% endwith %}
-
-        <!-- Note: Using custom card for GMI with caveat -->
-        <div class="card bg-base-100 shadow-md metric-card">
-            <div class="card-body p-4">
-                <h3 class="card-title text-sm font-medium text-base-content/70">GMI Disclaimer</h3>
-                <p class="text-xs text-base-content/60">GMI estimates may not match lab A1C for 25-30% of people. This is informational only.</p>
-            </div>
-        </div>
     </div>
 
     <!-- Time in Range Chart -->

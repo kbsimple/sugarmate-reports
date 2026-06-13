@@ -265,7 +265,7 @@ class TestResultsTemplateRendering:
         assert "Time in Target" in body
         assert "Average Glucose" in body
         assert "Glucose Variability" in body
-        assert "GMI" in body
+        assert "Glucose Percentiles" in body
 
     def test_results_html_contains_wellness_disclaimer(self, test_client: TestClient, sample_session_id: str):
         """Rendered results page must contain the regulatory wellness disclaimer."""
