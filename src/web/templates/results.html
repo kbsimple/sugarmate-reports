@@ -57,13 +57,18 @@
     {% endif %}
 
     <!-- Key Metrics Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {% with title="Time in Target", value=results.time_in_range.target_pct|round(1), unit="%", target_range="70-180 mg/dL", status="good", description="Percentage of readings in healthy range" %}
         {% include 'components/metrics_card.html' %}
         {% endwith %}
 
         {% set avg_status = "good" if results.average_glucose < 154 else ("warning" if results.average_glucose < 183 else "bad") %}
         {% with title="Average Glucose", value=results.average_glucose|round(0)|int, unit="mg/dL", status=avg_status, description="Mean glucose level" %}
+        {% include 'components/metrics_card.html' %}
+        {% endwith %}
+
+        {% set std_status = "good" if results.glucose_std < 50 else ("warning" if results.glucose_std < 70 else "bad") %}
+        {% with title="Standard Deviation", value=results.glucose_std|round(1), unit="mg/dL", status=std_status, description="Glucose standard deviation" %}
         {% include 'components/metrics_card.html' %}
         {% endwith %}
 
@@ -88,7 +93,7 @@
         </div>
 
         {% set cv_status = "good" if results.cv_pct < 36 else ("warning" if results.cv_pct < 45 else "bad") %}
-        {% with title="Glucose Variability (CV)", value=results.cv_pct|round(1), unit="%", target_range="<36%", status=cv_status, description="Coefficient of variation" %}
+        {% with title="CV", value=results.cv_pct|round(1), unit="%", target_range="<36%", status=cv_status, description="Coefficient of variation" %}
         {% include 'components/metrics_card.html' %}
         {% endwith %}
     </div>
@@ -133,49 +138,6 @@
         {% endwith %}
     </div>
 
-    <!-- Anomaly Detection (Phase 6) -->
-    <div class="mb-6">
-        {% with anomaly_detection=anomaly_detection %}
-        {% include 'components/anomaly_detection.html' %}
-        {% endwith %}
-    </div>
-
-    <!-- Patterns and Suggestions -->
-    <div class="mb-6">
-        {% with patterns=patterns, suggestions=suggestions %}
-        {% include 'components/patterns_list.html' %}
-        {% endwith %}
-    </div>
-
-    <!-- Variability Metrics -->
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-body">
-            <h3 class="card-title text-lg mb-4">Glucose Variability</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-base-200 rounded-lg p-4 text-center">
-                    <p class="text-sm text-base-content/70">Standard Deviation</p>
-                    <p class="text-2xl font-semibold">{{ results.glucose_std|round(1) }}</p>
-                    <p class="text-xs text-base-content/50">mg/dL</p>
-                </div>
-                <div class="bg-base-200 rounded-lg p-4 text-center">
-                    <p class="text-sm text-base-content/70">CV</p>
-                    <p class="text-2xl font-semibold">{{ results.cv_pct|round(1) }}</p>
-                    <p class="text-xs text-base-content/50">%</p>
-                </div>
-                <div class="bg-base-200 rounded-lg p-4 text-center">
-                    <p class="text-sm text-base-content/70">Completeness</p>
-                    <p class="text-2xl font-semibold">{{ results.completeness_pct|round(1) }}</p>
-                    <p class="text-xs text-base-content/50">%</p>
-                </div>
-                <div class="bg-base-200 rounded-lg p-4 text-center">
-                    <p class="text-sm text-base-content/70">Total Readings</p>
-                    <p class="text-2xl font-semibold">{{ results.total_readings }}</p>
-                    <p class="text-xs text-base-content/50">readings</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Completeness Progress -->
     <div class="card bg-base-100 shadow-md mb-6">
         <div class="card-body">
@@ -191,8 +153,7 @@
     <!-- Wellness Disclaimer -->
     <div class="bg-base-200 rounded-lg p-4 text-sm text-base-content/70 mb-6">
         <p><strong>Wellness Information Only:</strong> These results are for informational purposes only
-        and are not medical advice. GMI estimates may not match lab A1C for 25-30% of people.
-        Always discuss glucose management with your healthcare provider.</p>
+        and are not medical advice. Always discuss glucose management with your healthcare provider.</p>
     </div>
 
     <!-- Actions -->

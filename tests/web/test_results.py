@@ -264,7 +264,7 @@ class TestResultsTemplateRendering:
         body = response.text
         assert "Time in Target" in body
         assert "Average Glucose" in body
-        assert "Glucose Variability" in body
+        assert "Standard Deviation" in body
         assert "Glucose Percentiles" in body
 
     def test_results_html_contains_wellness_disclaimer(self, test_client: TestClient, sample_session_id: str):
