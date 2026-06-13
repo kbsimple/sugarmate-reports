@@ -19,6 +19,8 @@ current_phase_name: Time-of-Day Chart & Patterns UX
 **Last Updated:** 2026-06-12
 **Status:** v3.0 Phase 8 COMPLETE — ToD chart fix, behavioral patterns redesign, out-of-range insights, SC-5 gap closure
 
+Last activity: 2026-06-12 - Completed quick task 260612-bh9: 7 report UI updates (dismissable banner, weekday/weekend splits, hourly ToD patterns, 3-week avg overlay, behavioral colors)
+
 ---
 
 ## Project Reference
@@ -175,6 +177,12 @@ current_phase_name: Time-of-Day Chart & Patterns UX
 ### Roadmap Evolution
 
 - Phase 8 added: Fix Time-of-Day chart rendering, redesign behavioral patterns with inline range status (no accordion, variability + range dimensions), elevate out-of-range time windows as actionable priority insights segmented by weekday/weekend
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260612-bh9 | 7 UI updates: dismissable banner, weekday/weekend splits, hourly ToD, glucose trend avg overlay, behavioral colors | 2026-06-12 | a9c6d1b | [260612-bh9-report-ui-updates](./quick/260612-bh9-report-ui-updates/) |
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
