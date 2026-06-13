@@ -1,33 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: UX Improvements
-status: phase_complete
-last_updated: "2026-06-12T00:00:00Z"
+milestone: archived
+milestone_name: All milestones closed
+status: milestone_complete
+last_updated: "2026-06-13T00:00:00Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 23
+  completed_plans: 23
   percent: 100
-current_phase: 8
-current_phase_name: Time-of-Day Chart & Patterns UX
+current_phase: none
+current_phase_name: All milestones archived
 ---
 
 # STATE.md: CGM Insights
 
-**Last Updated:** 2026-06-12
-**Status:** v3.0 Phase 8 COMPLETE — ToD chart fix, behavioral patterns redesign, out-of-range insights, SC-5 gap closure
+**Last Updated:** 2026-06-13
+**Status:** ALL MILESTONES ARCHIVED — v1.0, v2.0, v3.0 closed. Ready for next milestone.
 
-Last activity: 2026-06-12 - Completed quick task 260612-zym: day-of-week in Time Windows dates, Daily TIR expanded to 21 days with day-of-week labels
+Last activity: 2026-06-13 - Archived v1.0, v2.0, v3.0 milestones
 
 ---
 
 ## Project Reference
 
-**Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
+See: .planning/PROJECT.md (updated 2026-06-13)
 
-**Current Focus:** v2.0 Pattern Analysis Release — behavioral patterns, sleep analysis, anomaly detection
+**Core Value:** Users upload their CGM data and leave knowing exactly what to focus on to improve their glucose control.
+**Current Focus:** Planning next milestone
 
 ---
 
@@ -185,6 +186,20 @@ Last activity: 2026-06-12 - Completed quick task 260612-zym: day-of-week in Time
 | 260612-bh9 | 7 UI updates: dismissable banner, weekday/weekend splits, hourly ToD, glucose trend avg overlay, behavioral colors | 2026-06-12 | a9c6d1b | [260612-bh9-report-ui-updates](./quick/260612-bh9-report-ui-updates/) |
 | 260612-fqs | Expandable time windows rows, daily TIR bar chart, behavioral patterns diurnal line chart | 2026-06-12 | f8fb221 | [260612-fqs-report-ui-updates-2](./quick/260612-fqs-report-ui-updates-2/) |
 | 260612-zym | Day-of-week in Time Windows dates (Tue, May 12), Daily TIR expanded to 21 days with weekday labels | 2026-06-12 | c8c9b2a | [260612-zym-dow-formatting-tir-day-count](./quick/260612-zym-dow-formatting-tir-day-count/) |
+
+---
+
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-06-13:
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | Phase 08: 08-HUMAN-UAT.md — 3 pending browser scenarios | partial |
+| verification | Phase 08: 08-VERIFICATION.md — human review needed | human_needed |
+| quick_task | 260612-bh9-report-ui-updates | summary flagged by audit tooling |
+| quick_task | 260612-fqs-report-ui-updates-2 | summary flagged by audit tooling |
+| quick_task | 260612-zym-dow-formatting-tir-day-count | summary flagged by audit tooling |
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
