@@ -60,13 +60,13 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
         {# ── Macro: render one expandable out-of-range row ── #}
         {# avg_val and alert_class are passed in; bucket_start / window_min for JS detail lookup #}
 
-        {% macro oor_row(pattern, avg_val, alert_class, label_suffix) %}
-        <div x-data="{ open: false, details: null, bucketStart: {{ pattern.bucket_start_minute }}, windowMin: 60 }"
+        {% macro oor_row(pattern, avg_val, alert_class, label_suffix, day_type='all') %}
+        <div x-data="{ open: false, details: null, bucketStart: {{ pattern.bucket_start_minute }}, windowMin: 60, dayType: '{{ day_type }}' }"
              class="alert {{ alert_class }} flex-col items-stretch cursor-pointer select-none">
             {# Summary row — click toggles detail #}
             <div class="flex w-full gap-2"
                  :class="open ? 'flex-col items-start' : 'flex-row items-center justify-between flex-wrap'"
-                 @click="open = !open; if (open && !details) details = computeWindowDetails(bucketStart, windowMin)">
+                 @click="open = !open; if (open && !details) details = computeWindowDetails(bucketStart, windowMin, dayType)">
                 <div class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg"
                          class="w-4 h-4 shrink-0 transition-transform duration-200"
@@ -127,16 +127,16 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
         {% if wd_above or wd_below %}
         <h4 class="text-base font-bold mb-2">Weekdays</h4>
         <div class="space-y-2 mb-4 pl-2">
-          {% for pattern in wd_above %}{{ oor_row(pattern, pattern.weekday_avg_glucose, "alert-warning", "Above Range") }}{% endfor %}
-          {% for pattern in wd_below %}{{ oor_row(pattern, pattern.weekday_avg_glucose, "alert-error", "Below Range") }}{% endfor %}
+          {% for pattern in wd_above %}{{ oor_row(pattern, pattern.weekday_avg_glucose, "alert-warning", "Above Range", "weekday") }}{% endfor %}
+          {% for pattern in wd_below %}{{ oor_row(pattern, pattern.weekday_avg_glucose, "alert-error", "Below Range", "weekday") }}{% endfor %}
         </div>
         {% endif %}
 
         {% if we_above or we_below %}
         <h4 class="text-base font-bold mb-2">Weekends</h4>
         <div class="space-y-2 mb-4 pl-2">
-          {% for pattern in we_above %}{{ oor_row(pattern, pattern.weekend_avg_glucose, "alert-warning", "Above Range") }}{% endfor %}
-          {% for pattern in we_below %}{{ oor_row(pattern, pattern.weekend_avg_glucose, "alert-error", "Below Range") }}{% endfor %}
+          {% for pattern in we_above %}{{ oor_row(pattern, pattern.weekend_avg_glucose, "alert-warning", "Above Range", "weekend") }}{% endfor %}
+          {% for pattern in we_below %}{{ oor_row(pattern, pattern.weekend_avg_glucose, "alert-error", "Below Range", "weekend") }}{% endfor %}
         </div>
         {% endif %}
 

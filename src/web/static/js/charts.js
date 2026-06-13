@@ -411,7 +411,7 @@ function createBehavioralPatternsLineChart(canvasId, bp) {
  * @param {number} windowMin   - window duration in minutes (e.g. 60)
  * @returns {Array} sorted array of {date, avgGlucose, readings, min, max, pctInRange}
  */
-function computeWindowDetails(bucketStart, windowMin) {
+function computeWindowDetails(bucketStart, windowMin, dayType) {
     const readings = typeof glucoseReadings !== 'undefined' ? glucoseReadings : [];
     if (!readings.length) return [];
 
@@ -420,17 +420,24 @@ function computeWindowDetails(bucketStart, windowMin) {
 
     for (const r of readings) {
         const ts = new Date(r.timestamp);
+
+        // Filter by day type before anything else
+        const dow = ts.getDay(); // 0=Sun, 6=Sat
+        const isWeekend = dow === 0 || dow === 6;
+        if (dayType === 'weekday' && isWeekend) continue;
+        if (dayType === 'weekend' && !isWeekend) continue;
+
         const mod = ts.getHours() * 60 + ts.getMinutes();
         const inBucket = bucketEnd <= 1440
             ? mod >= bucketStart && mod < bucketEnd
             : mod >= bucketStart || mod < (bucketEnd - 1440);
         if (!inBucket) continue;
 
-        // Key by full date for sorting; display as short label
-        const isoDate = ts.toISOString().slice(0, 10);
+        // Use local calendar date as key (toISOString uses UTC and misgroups late-night readings)
+        const localKey = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}-${String(ts.getDate()).padStart(2,'0')}`;
         const dispDate = ts.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        if (!byDate[isoDate]) byDate[isoDate] = { dispDate, values: [] };
-        byDate[isoDate].values.push(r.glucose);
+        if (!byDate[localKey]) byDate[localKey] = { dispDate, values: [] };
+        byDate[localKey].values.push(r.glucose);
     }
 
     return Object.entries(byDate)
