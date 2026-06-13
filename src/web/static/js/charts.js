@@ -83,21 +83,25 @@ function createTIRChart(canvasId, data) {
 function computeDailyTIR(readings) {
     const byDate = {};
     for (const r of readings) {
-        const dateStr = new Date(r.timestamp).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric'
+        const ts = new Date(r.timestamp);
+        // Use ISO date as key for stable grouping; derive display label separately
+        const isoKey = ts.toISOString().slice(0, 10);
+        const dateStr = ts.toLocaleDateString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric'
         });
-        if (!byDate[dateStr]) byDate[dateStr] = { total: 0, inRange: 0, ts: new Date(r.timestamp) };
-        byDate[dateStr].total++;
-        if (r.glucose >= 70 && r.glucose <= 180) byDate[dateStr].inRange++;
+        if (!byDate[isoKey]) byDate[isoKey] = { dateStr, total: 0, inRange: 0, ts };
+        byDate[isoKey].total++;
+        if (r.glucose >= 70 && r.glucose <= 180) byDate[isoKey].inRange++;
     }
-    return Object.entries(byDate)
+    const all = Object.entries(byDate)
         .sort(([, a], [, b]) => a.ts - b.ts)
-        .map(([date, v]) => ({
-            date,
+        .map(([, v]) => ({
+            date: v.dateStr,
             pctInRange: Math.round(v.inRange / v.total * 100),
             total: v.total,
             inRange: v.inRange
         }));
+    return all.slice(-21);
 }
 
 function createGlucoseTrendChart(canvasId, data) {
@@ -155,7 +159,7 @@ function createGlucoseTrendChart(canvasId, data) {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 20 }
+                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 21 }
                 },
                 y: {
                     min: 0, max: 100,
@@ -424,7 +428,7 @@ function computeWindowDetails(bucketStart, windowMin) {
 
         // Key by full date for sorting; display as short label
         const isoDate = ts.toISOString().slice(0, 10);
-        const dispDate = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const dispDate = ts.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
         if (!byDate[isoDate]) byDate[isoDate] = { dispDate, values: [] };
         byDate[isoDate].values.push(r.glucose);
     }
