@@ -19,7 +19,7 @@ current_phase_name: Time-of-Day Chart & Patterns UX
 **Last Updated:** 2026-06-12
 **Status:** v3.0 Phase 8 COMPLETE — ToD chart fix, behavioral patterns redesign, out-of-range insights, SC-5 gap closure
 
-Last activity: 2026-06-12 - Completed quick task 260612-bh9: 7 report UI updates (dismissable banner, weekday/weekend splits, hourly ToD patterns, 3-week avg overlay, behavioral colors)
+Last activity: 2026-06-12 - Completed quick task 260612-zym: day-of-week in Time Windows dates, Daily TIR expanded to 21 days with day-of-week labels
 
 ---
 
@@ -184,6 +184,7 @@ Last activity: 2026-06-12 - Completed quick task 260612-bh9: 7 report UI updates
 |---|-------------|------|--------|-----------|
 | 260612-bh9 | 7 UI updates: dismissable banner, weekday/weekend splits, hourly ToD, glucose trend avg overlay, behavioral colors | 2026-06-12 | a9c6d1b | [260612-bh9-report-ui-updates](./quick/260612-bh9-report-ui-updates/) |
 | 260612-fqs | Expandable time windows rows, daily TIR bar chart, behavioral patterns diurnal line chart | 2026-06-12 | f8fb221 | [260612-fqs-report-ui-updates-2](./quick/260612-fqs-report-ui-updates-2/) |
+| 260612-zym | Day-of-week in Time Windows dates (Tue, May 12), Daily TIR expanded to 21 days with weekday labels | 2026-06-12 | c8c9b2a | [260612-zym-dow-formatting-tir-day-count](./quick/260612-zym-dow-formatting-tir-day-count/) |
 
 ---
 *This file tracks current position and context. Update after each phase transition.*
