@@ -273,3 +273,86 @@ class TestResultsTemplateRendering:
 
         assert response.status_code == 200
         assert "Wellness Information Only" in response.text
+
+    def test_results_html_contains_daily_tir_heading(self, test_client: TestClient, sample_session_id: str):
+        """Glucose Trend section is now 'Daily Time in Range' — heading must be present."""
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        assert "Daily Time in Range" in response.text
+
+    def test_results_html_no_glucose_trend_heading(self, test_client: TestClient, sample_session_id: str):
+        """'Glucose Trend' section heading must be absent — it was replaced by 'Daily Time in Range'.
+
+        Regression guard: ensures old heading is not accidentally re-introduced.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        # The phrase may appear in Jinja2 comments ({# ... #}) but NOT in rendered output
+        assert "Glucose Trend" not in response.text
+
+    def test_results_html_contains_chart_canvases(self, test_client: TestClient, sample_session_id: str):
+        """All three main chart canvases must be present in the rendered page."""
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        body = response.text
+        assert 'id="tirChart"' in body
+        assert 'id="glucoseTrendChart"' in body
+        assert 'id="dailyPatternsChart"' in body
+
+    def test_results_html_exposes_behavioral_patterns_js_global(self, test_client: TestClient, sample_session_id: str):
+        """'behavioralPatterns' JS global must be serialized into the page for chart init."""
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        assert "const behavioralPatterns" in response.text
+
+    def test_results_html_exposes_glucose_readings_js_global(self, test_client: TestClient, sample_session_id: str):
+        """'glucoseReadings' JS global must be serialized into the page for chart init."""
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        assert "const glucoseReadings" in response.text
+
+    def test_behavioral_patterns_chart_canvas_shown_with_sufficient_data(
+        self, test_client: TestClient, sample_session_with_behavioral_patterns: str
+    ):
+        """'behavioralPatternsChart' canvas appears when session has ≥5 days of behavioral data."""
+        response = test_client.get(f"/results/{sample_session_with_behavioral_patterns}")
+
+        assert response.status_code == 200
+        assert 'id="behavioralPatternsChart"' in response.text
+
+    def test_behavioral_patterns_canvas_absent_without_data(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """'behavioralPatternsChart' canvas is absent when behavioral_patterns is None.
+
+        When no behavioral data is in the session the template renders the
+        insufficient-data alert, not the chart canvas.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        # sample_session_id has no behavioral_patterns — canvas must not appear
+        assert 'id="behavioralPatternsChart"' not in response.text
+
+    def test_time_windows_rows_are_expandable_with_oor_data(
+        self, test_client: TestClient, sample_session_with_oor_behavioral_patterns: str
+    ):
+        """When OOR patterns exist, each row carries Alpine.js expand attrs and computeWindowDetails.
+
+        Regression guard: ensures the click-to-expand markup is actually rendered in the
+        HTML output and that the JS detail function name is wired into the @click handler.
+        """
+        response = test_client.get(f"/results/{sample_session_with_oor_behavioral_patterns}")
+
+        assert response.status_code == 200
+        body = response.text
+        # Alpine.js expand toggle must be present
+        assert "x-data" in body
+        assert "computeWindowDetails" in body
+        # The 'Time Windows to Focus On' card must exist
+        assert "Time Windows to Focus On" in body

@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from cgm_insights.models import AnalysisResults, TimeInRange
 from cgm_insights.analytics import PatternResult, PatternType, PatternSeverity
+from cgm_insights.analytics.behavioral_patterns import analyze_behavioral_patterns
 from cgm_insights.output.suggestions import Suggestion
 from src.web.app import app
 from src.web.services.session import session_store, SessionData, create_session
@@ -125,6 +126,68 @@ def sample_session_with_patterns() -> str:
         raw_readings=raw_readings,
     )
 
+    return session_id
+
+
+@pytest.fixture
+def sample_session_with_behavioral_patterns() -> str:
+    """Session with sufficient behavioral_patterns data (14 days, normal glucose).
+
+    Used to test rendering of the behavioralPatternsChart canvas.
+
+    Returns:
+        Session ID string
+    """
+    session_id = create_session()
+    results = generate_sample_results()
+    # 2016 readings over 14 days ≈ 144/day — well above MIN_DAYS=5 threshold
+    readings = generate_sample_readings(count=2016, days=14, avg_glucose=140.0, std_dev=20.0)
+    raw_readings = [
+        {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
+        for r in readings
+    ]
+
+    bp_result = analyze_behavioral_patterns(readings)
+    bp_data = bp_result.model_dump() if not bp_result.insufficient_data else None
+
+    session_store.store(
+        session_id,
+        results,
+        patterns=[],
+        raw_readings=raw_readings,
+        behavioral_patterns=bp_data,
+    )
+    return session_id
+
+
+@pytest.fixture
+def sample_session_with_oor_behavioral_patterns() -> str:
+    """Session with behavioral_patterns that include out-of-range hourly windows.
+
+    Uses avg_glucose=220 so all hourly pattern averages exceed 180 mg/dL,
+    guaranteeing expandable OOR rows appear in 'Time Windows to Focus On'.
+
+    Returns:
+        Session ID string
+    """
+    session_id = create_session()
+    results = generate_sample_results(avg_glucose=220.0, tir_target=20.0)
+    readings = generate_sample_readings(count=2016, days=14, avg_glucose=220.0, std_dev=15.0)
+    raw_readings = [
+        {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
+        for r in readings
+    ]
+
+    bp_result = analyze_behavioral_patterns(readings)
+    bp_data = bp_result.model_dump() if not bp_result.insufficient_data else None
+
+    session_store.store(
+        session_id,
+        results,
+        patterns=[],
+        raw_readings=raw_readings,
+        behavioral_patterns=bp_data,
+    )
     return session_id
 
 
