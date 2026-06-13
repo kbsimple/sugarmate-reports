@@ -165,14 +165,34 @@
         };
     }
 
-    function showIndicator(message) {
+    const LOADING_STEPS = [
+        'Parsing your readings…',
+        'Computing time in range…',
+        'Analyzing glucose variability…',
+        'Detecting behavioral patterns…',
+        'Analyzing overnight patterns…',
+        'Scanning for anomalies…',
+        'Almost done…',
+    ];
+    let _loadingTimer = null;
+
+    function showIndicator(firstMessage) {
         const indicator = document.getElementById('loading-indicator');
-        const text = indicator.querySelector('p');
-        if (text && message) text.textContent = message;
+        const msg = document.getElementById('loading-message');
+        if (msg) msg.textContent = firstMessage || LOADING_STEPS[0];
         indicator.style.removeProperty('display');
+
+        let step = 1;
+        _loadingTimer = setInterval(function() {
+            if (step < LOADING_STEPS.length && msg) {
+                msg.textContent = LOADING_STEPS[step++];
+            }
+        }, 1400);
     }
 
     function hideIndicator() {
+        clearInterval(_loadingTimer);
+        _loadingTimer = null;
         document.getElementById('loading-indicator').style.display = 'none';
     }
 
@@ -180,7 +200,7 @@
         document.getElementById('error-container').style.display = 'none';
         const form = evt.detail.elt;
         const isUrlForm = form && form.id === 'url-form';
-        showIndicator(isUrlForm ? 'Fetching and analyzing your data…' : 'Analyzing your data…');
+        showIndicator(isUrlForm ? 'Fetching your data…' : LOADING_STEPS[0]);
     });
 
     document.body.addEventListener('htmx:afterRequest', function() {

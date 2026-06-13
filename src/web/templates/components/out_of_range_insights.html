@@ -96,23 +96,23 @@ Each row is expandable: click reveals per-date detail computed from glucoseReadi
                         <table class="table table-xs w-full">
                             <thead>
                                 <tr>
-                                    <th class="whitespace-nowrap">Date</th>
-                                    <th class="text-right">Avg</th>
-                                    <th class="text-right">Min</th>
-                                    <th class="text-right">Max</th>
-                                    <th class="text-right">Readings</th>
-                                    <th class="text-right">% In Range</th>
+                                    <th>Date</th>
+                                    <th>Avg</th>
+                                    <th>Min</th>
+                                    <th>Max</th>
+                                    <th>Readings</th>
+                                    <th>% In Range</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <template x-for="row in details" :key="row.date">
                                     <tr>
-                                        <td class="whitespace-nowrap" x-text="row.date"></td>
-                                        <td class="text-right" x-text="row.avgGlucose + ' mg/dL'"></td>
-                                        <td class="text-right" x-text="row.min + ' mg/dL'"></td>
-                                        <td class="text-right" x-text="row.max + ' mg/dL'"></td>
-                                        <td class="text-right" x-text="row.readings"></td>
-                                        <td class="text-right" x-text="row.pctInRange + '%'"></td>
+                                        <td x-text="row.date"></td>
+                                        <td x-text="row.avgGlucose + ' mg/dL'"></td>
+                                        <td x-text="row.min + ' mg/dL'"></td>
+                                        <td x-text="row.max + ' mg/dL'"></td>
+                                        <td x-text="row.readings"></td>
+                                        <td x-text="row.pctInRange + '%'"></td>
                                     </tr>
                                 </template>
                             </tbody>

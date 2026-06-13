@@ -56,11 +56,27 @@
     <div id="loading-indicator" style="display: none;">
         <div class="card bg-base-100 shadow-xl p-8">
             <div class="flex flex-col items-center gap-4">
-                <span class="loading loading-spinner loading-lg text-primary"></span>
-                <p class="text-base-content font-medium">Processing your data...</p>
+                <span id="loading-donut" aria-hidden="true">🍩</span>
+                <p id="loading-message" class="text-base-content font-medium">Analyzing your data…</p>
             </div>
         </div>
     </div>
+
+    <style>
+        #loading-donut {
+            font-size: 3.5rem;
+            display: inline-block;
+            animation: donut-jelly 0.9s ease-in-out infinite;
+            transform-origin: center;
+        }
+        @keyframes donut-jelly {
+            0%   { transform: scale(1, 1); }
+            25%  { transform: scale(1.15, 0.85); }
+            50%  { transform: scale(0.9, 1.1); }
+            75%  { transform: scale(1.05, 0.95); }
+            100% { transform: scale(1, 1); }
+        }
+    </style>
 
     <!-- Error toast -->
     <div id="error-toast" class="toast toast-top toast-center" style="display: none;">
