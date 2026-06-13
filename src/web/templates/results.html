@@ -36,11 +36,11 @@
 
     <!-- Quality Warnings -->
     {% if quality_warnings and quality_warnings|length > 0 %}
-    <div class="alert alert-warning mb-6">
+    <div x-data="{ show: true }" x-show="show" class="alert alert-warning mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <div>
+        <div class="flex-1">
             <h3 class="font-semibold">Data Quality Notes</h3>
             <ul class="list-disc list-inside text-sm mt-1">
                 {% for warning in quality_warnings %}
@@ -48,6 +48,11 @@
                 {% endfor %}
             </ul>
         </div>
+        <button @click="show = false" class="btn btn-sm btn-ghost" aria-label="Dismiss">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
     </div>
     {% endif %}
 
@@ -88,6 +93,13 @@
         {% endwith %}
     </div>
 
+    <!-- Out-of-Range Priority Insights (Time Windows to Focus On) -->
+    <div class="mb-6">
+        {% with behavioral_patterns=behavioral_patterns %}
+        {% include 'components/out_of_range_insights.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Glucose Trend Chart -->
     <div class="mb-6">
         {% include 'components/glucose_trend.html' %}
@@ -95,13 +107,8 @@
 
     <!-- Daily Patterns Chart -->
     <div class="mb-6">
-        {% include 'components/daily_patterns.html' %}
-    </div>
-
-    <!-- Out-of-Range Priority Insights (Phase 8) -->
-    <div class="mb-6">
         {% with behavioral_patterns=behavioral_patterns %}
-        {% include 'components/out_of_range_insights.html' %}
+        {% include 'components/daily_patterns.html' %}
         {% endwith %}
     </div>
 
@@ -205,6 +212,7 @@
 const tirData = {{ tir_data | tojson }};
 const glucoseReadings = {{ glucose_readings | tojson }};
 const patterns = {{ patterns | tojson }};
+const behavioralPatterns = {{ behavioral_patterns | tojson }};
 </script>
 <script src="/static/js/charts.js"></script>
 {% endblock %}

@@ -9,18 +9,14 @@ Parameters:
         <div class="chart-container" style="position: relative; height: 300px;">
             <canvas id="glucoseTrendChart"></canvas>
         </div>
-        <div class="flex flex-wrap gap-4 mt-4 justify-center text-sm">
+        <div class="flex flex-wrap gap-4 mt-2 justify-center text-sm">
             <div class="flex items-center gap-2">
-                <span class="w-8 h-0.5 bg-error"></span>
-                <span>Low (&lt;70 mg/dL)</span>
+                <span class="w-8 h-0.5 bg-success"></span>
+                <span>Glucose</span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="w-8 h-0.5 bg-success opacity-30"></span>
-                <span>Target Range (70-180 mg/dL)</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-8 h-0.5 bg-yellow-400"></span>
-                <span>High (&gt;180 mg/dL)</span>
+                <span class="w-8 border-t-2 border-dashed border-indigo-500"></span>
+                <span>3-Week Avg (30-min)</span>
             </div>
         </div>
         {% if not glucose_readings or glucose_readings|length == 0 %}

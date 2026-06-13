@@ -4,7 +4,8 @@ Parameters:
     Renders nothing if None or if insufficient_data is True.
     Renders nothing if no 60-min hourly-boundary patterns fall outside 70–180 mg/dL.
 Data source: 60-minute window patterns at hourly boundaries (bucket_start_minute % 60 == 0).
-Sections: Above Range (avg_glucose > 180) then Below Range (avg_glucose < 70).
+Sections: Weekdays then Weekends (using weekday_avg_glucose / weekend_avg_glucose).
+Falls back to blended avg_glucose when weekday/weekend split is unavailable.
 #}
 {% if behavioral_patterns and not behavioral_patterns.insufficient_data %}
 {% set window_patterns = behavioral_patterns.patterns
@@ -17,15 +18,41 @@ Sections: Above Range (avg_glucose > 180) then Below Range (avg_glucose < 70).
   {% endif %}
 {% endfor %}
 
-{# Detect presence of out-of-range patterns before rendering card wrapper #}
-{% set has_above = [] %}
-{% set has_below = [] %}
+{# Check if weekday/weekend split is available (any pattern has non-null split) #}
+{% set has_split = [] %}
 {% for p in hourly_patterns %}
-  {% if p.avg_glucose > 180 %}{% set _ = has_above.append(1) %}{% endif %}
-  {% if p.avg_glucose < 70 %}{% set _ = has_below.append(1) %}{% endif %}
+  {% if p.weekday_avg_glucose is not none and p.weekend_avg_glucose is not none %}
+    {% set _ = has_split.append(1) %}
+  {% endif %}
 {% endfor %}
 
-{% if has_above or has_below %}
+{# Collect out-of-range patterns per day type #}
+{% set wd_above = [] %}
+{% set wd_below = [] %}
+{% set we_above = [] %}
+{% set we_below = [] %}
+{% set blend_above = [] %}
+{% set blend_below = [] %}
+
+{% for p in hourly_patterns %}
+  {% if has_split %}
+    {% if p.weekday_avg_glucose is not none %}
+      {% if p.weekday_avg_glucose > 180 %}{% set _ = wd_above.append(p) %}{% endif %}
+      {% if p.weekday_avg_glucose < 70 %}{% set _ = wd_below.append(p) %}{% endif %}
+    {% endif %}
+    {% if p.weekend_avg_glucose is not none %}
+      {% if p.weekend_avg_glucose > 180 %}{% set _ = we_above.append(p) %}{% endif %}
+      {% if p.weekend_avg_glucose < 70 %}{% set _ = we_below.append(p) %}{% endif %}
+    {% endif %}
+  {% else %}
+    {% if p.avg_glucose > 180 %}{% set _ = blend_above.append(p) %}{% endif %}
+    {% if p.avg_glucose < 70 %}{% set _ = blend_below.append(p) %}{% endif %}
+  {% endif %}
+{% endfor %}
+
+{% set any_oor = wd_above or wd_below or we_above or we_below or blend_above or blend_below %}
+
+{% if any_oor %}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
         <h3 class="card-title text-lg font-bold">Time Windows to Focus On</h3>
@@ -33,54 +60,92 @@ Sections: Above Range (avg_glucose > 180) then Below Range (avg_glucose < 70).
             These time windows consistently show glucose outside the 70–180 mg/dL range.
         </p>
 
-        {% if has_above %}
+        {% if has_split %}
+        {# Split view: Weekdays and Weekends as primary grouping #}
+        {% if wd_above or wd_below %}
+        <h4 class="text-base font-bold mb-2">Weekdays</h4>
+        <div class="space-y-2 mb-4 pl-2">
+          {% for pattern in wd_above %}
+          <div class="alert alert-warning">
+            <div class="flex-1">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
+                <span class="text-sm">avg {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% for pattern in wd_below %}
+          <div class="alert alert-error">
+            <div class="flex-1">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
+                <span class="text-sm">avg {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if we_above or we_below %}
+        <h4 class="text-base font-bold mb-2">Weekends</h4>
+        <div class="space-y-2 mb-4 pl-2">
+          {% for pattern in we_above %}
+          <div class="alert alert-warning">
+            <div class="flex-1">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
+                <span class="text-sm">avg {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% for pattern in we_below %}
+          <div class="alert alert-error">
+            <div class="flex-1">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
+                <span class="text-sm">avg {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        {# Blended fallback when no weekday/weekend split available #}
+        {% if blend_above %}
         <h4 class="text-sm font-semibold mb-2">Above Range</h4>
         <div class="space-y-2 mb-4">
-        {% for pattern in hourly_patterns %}
-          {% if pattern.avg_glucose > 180 %}
+          {% for pattern in blend_above %}
           <div class="alert alert-warning">
             <div class="flex-1">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="font-bold">{{ pattern.bucket_label }} — Above Range</span>
                 <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
               </div>
-              {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
-              <p class="text-sm mt-1 text-base-content/70">
-                Weekdays: {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL
-                &middot;
-                Weekends: {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL
-              </p>
-              {% endif %}
             </div>
           </div>
-          {% endif %}
-        {% endfor %}
+          {% endfor %}
         </div>
         {% endif %}
-
-        {% if has_below %}
+        {% if blend_below %}
         <h4 class="text-sm font-semibold mb-2">Below Range</h4>
         <div class="space-y-2 mb-4">
-        {% for pattern in hourly_patterns %}
-          {% if pattern.avg_glucose < 70 %}
+          {% for pattern in blend_below %}
           <div class="alert alert-error">
             <div class="flex-1">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="font-bold">{{ pattern.bucket_label }} — Below Range</span>
                 <span class="text-sm">avg {{ pattern.avg_glucose | round(0) | int }} mg/dL &middot; {{ (pattern.pct_out_of_range * 100) | round(0) | int }}% out of range</span>
               </div>
-              {% if pattern.weekday_avg_glucose is not none and pattern.weekend_avg_glucose is not none %}
-              <p class="text-sm mt-1 text-base-content/70">
-                Weekdays: {{ pattern.weekday_avg_glucose | round(0) | int }} mg/dL
-                &middot;
-                Weekends: {{ pattern.weekend_avg_glucose | round(0) | int }} mg/dL
-              </p>
-              {% endif %}
             </div>
           </div>
-          {% endif %}
-        {% endfor %}
+          {% endfor %}
         </div>
+        {% endif %}
         {% endif %}
 
         <div class="bg-base-200 rounded-lg p-2 mt-2">

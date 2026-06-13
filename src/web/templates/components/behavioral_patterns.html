@@ -53,11 +53,11 @@ Parameters:
                             <span class="text-sm font-medium">{{ pattern.bucket_label }}</span>
                             {# Consistency badge #}
                             {% if pattern.consistency_label == "Consistent" %}
-                            <span class="badge badge-success badge-sm">Consistent</span>
+                            <span class="badge badge-info badge-sm">Consistent</span>
                             {% elif pattern.consistency_label == "Variable" %}
                             <span class="badge badge-warning badge-sm">Variable</span>
                             {% else %}
-                            <span class="badge badge-ghost badge-sm">Moderate</span>
+                            <span class="badge badge-sm" style="background-color:#fef9c3;color:#854d0e;border-color:#fde68a">Moderate</span>
                             {% endif %}
                             {# Range status badge — new in Phase 8 #}
                             {% if pattern.avg_glucose < 70 %}
