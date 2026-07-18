@@ -61,6 +61,20 @@ uvicorn web.app:app --reload
 
 Upload a CSV, explore an interactive Chart.js dashboard, and download an AGP (Ambulatory Glucose Profile) PDF for your healthcare provider.
 
+### Screenshots
+
+**Metrics overview** — Time in Range doughnut, glucose percentiles (50th/70th/90th), standard deviation, and CV:
+
+![Report top — metrics and TIR](docs/screenshots/report-top.png)
+
+**Time-of-Day Patterns** — three inline charts (All Days / Weekdays / Weekends) with IQR shaded band, median, mean, and 70–180 mg/dL target zone:
+
+![Time-of-Day Patterns with IQR band](docs/screenshots/tod-patterns.png)
+
+**Daily TIR** — color-coded bars for every day in the period with a 70% reference line:
+
+![Daily Time in Range — all days](docs/screenshots/daily-tir.png)
+
 ---
 
 ## Python Library
