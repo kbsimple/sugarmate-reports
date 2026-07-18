@@ -9,44 +9,26 @@ Parameters:
     <div class="card-body">
         <h3 class="card-title text-lg mb-1">Time-of-Day Patterns</h3>
         <p class="text-sm text-base-content/60 mb-4">
-            Average glucose levels by hour throughout the day, color-coded by glucose zone.
+            Hourly glucose distribution: the shaded band shows the 25th–75th percentile range (IQR), the solid line is the median, and the dashed line is the mean. The green band marks the 70–180 mg/dL target.
         </p>
         <div id="todChartsGrid" class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
             <div>
                 <p class="text-sm font-medium text-center text-base-content/70 mb-2">All Days</p>
-                <div style="position: relative; height: 260px;">
+                <div style="position: relative; height: 380px;">
                     <canvas id="dailyPatternsChartAll"></canvas>
                 </div>
             </div>
             <div id="todWeekdaysCol">
                 <p class="text-sm font-medium text-center text-base-content/70 mb-2">Weekdays</p>
-                <div style="position: relative; height: 260px;">
+                <div style="position: relative; height: 380px;">
                     <canvas id="dailyPatternsChartWeekdays"></canvas>
                 </div>
             </div>
             <div id="todWeekendsCol">
                 <p class="text-sm font-medium text-center text-base-content/70 mb-2">Weekends</p>
-                <div style="position: relative; height: 260px;">
+                <div style="position: relative; height: 380px;">
                     <canvas id="dailyPatternsChartWeekends"></canvas>
                 </div>
-            </div>
-        </div>
-        <div class="flex flex-wrap gap-4 mt-4 justify-center text-sm">
-            <div class="flex items-center gap-2">
-                <span class="w-4 h-4 rounded bg-success"></span>
-                <span>Target (70-180)</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-4 h-4 rounded bg-yellow-400"></span>
-                <span>High (180-250)</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-4 h-4 rounded bg-orange-500"></span>
-                <span>Very High (&gt;250)</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-4 h-4 rounded bg-red-400"></span>
-                <span>Low (&lt;70)</span>
             </div>
         </div>
         {% if not behavioral_patterns and (not patterns or patterns|length == 0) %}

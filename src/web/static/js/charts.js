@@ -93,7 +93,7 @@ function computeDailyTIR(readings) {
         byDate[isoKey].total++;
         if (r.glucose >= 70 && r.glucose <= 180) byDate[isoKey].inRange++;
     }
-    const all = Object.entries(byDate)
+    return Object.entries(byDate)
         .sort(([, a], [, b]) => a.ts - b.ts)
         .map(([, v]) => ({
             date: v.dateStr,
@@ -101,7 +101,6 @@ function computeDailyTIR(readings) {
             total: v.total,
             inRange: v.inRange
         }));
-    return all.slice(-21);
 }
 
 function createGlucoseTrendChart(canvasId, data) {
@@ -111,6 +110,12 @@ function createGlucoseTrendChart(canvasId, data) {
 
     const daily = computeDailyTIR(data);
     if (daily.length === 0) return null;
+
+    // Expand the chart width when there are many days so bars stay readable
+    const wrapper = document.getElementById('glucoseTrendOuter');
+    if (wrapper && daily.length > 20) {
+        wrapper.style.width = Math.max(daily.length * 38, wrapper.offsetWidth) + 'px';
+    }
 
     const labels = daily.map(d => d.date);
     const values = daily.map(d => d.pctInRange);
@@ -159,7 +164,7 @@ function createGlucoseTrendChart(canvasId, data) {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 21 }
+                    ticks: { maxRotation: 45, autoSkip: false }
                 },
                 y: {
                     min: 0, max: 100,
@@ -185,7 +190,7 @@ function createGlucoseTrendChart(canvasId, data) {
     });
 }
 
-// ─── Time-of-Day patterns: three inline bar charts (All / Weekdays / Weekends) ──
+// ─── Time-of-Day patterns: three inline box-plot charts (All / Weekdays / Weekends) ──
 
 function extractHourlyPatterns(bp) {
     if (!bp || bp.insufficient_data || !bp.patterns) return { hourly: [], hasWeekdaySplit: false };
@@ -194,41 +199,107 @@ function extractHourlyPatterns(bp) {
     return { hourly, hasWeekdaySplit };
 }
 
-function glucoseBarColor(v) {
-    if (v < 70) return GLUCOSE_COLORS.low;
-    if (v <= 180) return GLUCOSE_COLORS.target;
-    if (v <= 250) return GLUCOSE_COLORS.high;
-    return GLUCOSE_COLORS.very_high;
-}
+// Shared target-band plugin (70–180 green fill) used by ToD charts
+const _todTargetBandPlugin = {
+    id: 'todTargetBand',
+    beforeDatasetsDraw(chart) {
+        const { ctx: c, scales: { y }, chartArea: { left, right } } = chart;
+        if (!y) return;
+        const y70 = y.getPixelForValue(70);
+        const y180 = y.getPixelForValue(180);
+        c.save();
+        c.fillStyle = 'rgba(34,197,94,0.07)';
+        c.fillRect(left, y180, right - left, y70 - y180);
+        c.restore();
+    }
+};
 
-function _makeTodBarChart(canvasId, labels, values) {
+function _makeTodBoxChart(canvasId, labels, pts) {
+    // pts: array of {avg, p25, p50, p75} — any field may be null
     const ctx = document.getElementById(canvasId);
     if (!ctx) return null;
-    const colors = values.map(v => v !== null ? glucoseBarColor(v) : 'transparent');
+
+    const hasBox = pts.some(d => d.p25 !== null && d.p75 !== null);
+
+    const datasets = [];
+
+    if (hasBox) {
+        datasets.push({
+            label: 'IQR (25th–75th %ile)',
+            data: pts.map(d => (d.p25 !== null && d.p75 !== null) ? [d.p25, d.p75] : null),
+            backgroundColor: 'rgba(99,102,241,0.18)',
+            borderColor: 'rgba(99,102,241,0.45)',
+            borderWidth: 1,
+            borderRadius: 2,
+            order: 2,
+        });
+    }
+
+    datasets.push({
+        type: 'line',
+        label: 'Median (50th %ile)',
+        data: pts.map(d => d.p50 !== null ? Math.round(d.p50 * 10) / 10 : null),
+        borderColor: 'rgba(99,102,241,1)',
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        order: 0,
+    });
+
+    datasets.push({
+        type: 'line',
+        label: 'Mean',
+        data: pts.map(d => d.avg !== null ? Math.round(d.avg * 10) / 10 : null),
+        borderColor: 'rgba(239,68,68,0.65)',
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 3],
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        order: 1,
+    });
+
+    const yMin = 40, yMax = 350;
+
     return new Chart(ctx, {
         type: 'bar',
-        data: {
-            labels,
-            datasets: [{ label: 'Average Glucose (mg/dL)', data: values, backgroundColor: colors, borderWidth: 0, borderRadius: 4 }]
-        },
+        plugins: [_todTargetBandPlugin],
+        data: { labels, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
             scales: {
                 x: {
-                    display: true,
                     grid: { display: false },
                     ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }
                 },
                 y: {
-                    min: 0, max: 300,
-                    title: { display: true, text: 'mg/dL' },
+                    min: yMin, max: yMax,
+                    title: { display: true, text: 'Glucose (mg/dL)' },
                     grid: { color: 'rgba(0,0,0,0.05)' }
                 }
             },
             plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: (ctx) => [`Average: ${ctx.raw} mg/dL`] } }
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { boxWidth: 16, padding: 10, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (item) => {
+                            if (item.raw === null) return null;
+                            if (Array.isArray(item.raw)) {
+                                return `${item.dataset.label}: ${item.raw[0]}–${item.raw[1]} mg/dL`;
+                            }
+                            return `${item.dataset.label}: ${item.raw} mg/dL`;
+                        }
+                    }
+                }
             }
         }
     });
@@ -238,26 +309,44 @@ function createDailyPatternCharts(legacyPatterns, bp) {
     const { hourly, hasWeekdaySplit } = extractHourlyPatterns(bp);
     const useBehavioral = hourly.length > 0;
 
-    let labels, allValues, weekdayValues, weekendValues;
+    let labels, allPts, wdPts, wePts;
     if (useBehavioral) {
         labels = hourly.map(p => p.bucket_label);
-        allValues = hourly.map(p => Math.round(p.avg_glucose * 10) / 10);
-        weekdayValues = hourly.map(p => p.weekday_avg_glucose !== null ? Math.round(p.weekday_avg_glucose * 10) / 10 : null);
-        weekendValues = hourly.map(p => p.weekend_avg_glucose !== null ? Math.round(p.weekend_avg_glucose * 10) / 10 : null);
+        allPts = hourly.map(p => ({
+            avg: p.avg_glucose,
+            p25: p.p25_glucose ?? null,
+            p50: p.p50_glucose ?? null,
+            p75: p.p75_glucose ?? null,
+        }));
+        wdPts = hourly.map(p => ({
+            avg: p.weekday_avg_glucose,
+            p25: p.weekday_p25_glucose ?? null,
+            p50: p.weekday_p50_glucose ?? null,
+            p75: p.weekday_p75_glucose ?? null,
+        }));
+        wePts = hourly.map(p => ({
+            avg: p.weekend_avg_glucose,
+            p25: p.weekend_p25_glucose ?? null,
+            p50: p.weekend_p50_glucose ?? null,
+            p75: p.weekend_p75_glucose ?? null,
+        }));
     } else {
         if (!legacyPatterns || !legacyPatterns.length) return;
         const timePatterns = legacyPatterns.filter(p => p.type === 'time_of_day');
         if (!timePatterns.length) return;
         timePatterns.sort((a, b) => (parseInt(a.time_period) || 0) - (parseInt(b.time_period) || 0));
         labels = timePatterns.map(p => p.time_period);
-        allValues = timePatterns.map(p => p.avg_glucose);
-        weekdayValues = null;
-        weekendValues = null;
+        allPts = timePatterns.map(p => ({ avg: p.avg_glucose, p25: null, p50: null, p75: null }));
+        wdPts = null;
+        wePts = null;
     }
 
-    _makeTodBarChart('dailyPatternsChartAll', labels, allValues);
+    _makeTodBoxChart('dailyPatternsChartAll', labels, allPts);
 
-    if (!hasWeekdaySplit || !weekdayValues || !weekendValues) {
+    const hasWdData = wdPts && wdPts.some(d => d.avg !== null);
+    const hasWeData = wePts && wePts.some(d => d.avg !== null);
+
+    if (!hasWeekdaySplit || !hasWdData || !hasWeData) {
         const weekdaysCol = document.getElementById('todWeekdaysCol');
         const weekendsCol = document.getElementById('todWeekendsCol');
         if (weekdaysCol) weekdaysCol.style.display = 'none';
@@ -265,8 +354,8 @@ function createDailyPatternCharts(legacyPatterns, bp) {
         return;
     }
 
-    _makeTodBarChart('dailyPatternsChartWeekdays', labels, weekdayValues);
-    _makeTodBarChart('dailyPatternsChartWeekends', labels, weekendValues);
+    _makeTodBoxChart('dailyPatternsChartWeekdays', labels, wdPts);
+    _makeTodBoxChart('dailyPatternsChartWeekends', labels, wePts);
 }
 
 // ─── Behavioral Patterns: diurnal line chart ──────────────────────────────────

@@ -39,8 +39,17 @@ class BehavioralPattern(BaseModel):
         consistency_label: Qualitative label (Consistent/Moderate/Variable).
         cv_score: Coefficient of variation of daily means. Lower = more consistent.
         avg_glucose: Mean glucose across all readings in this bucket (mg/dL).
+        p25_glucose: 25th percentile of all readings in this bucket.
+        p50_glucose: Median (50th percentile) of all readings in this bucket.
+        p75_glucose: 75th percentile of all readings in this bucket.
         weekday_avg_glucose: Mean glucose on weekdays, or None if < 5 weekdays with data.
         weekend_avg_glucose: Mean glucose on weekends, or None if < 5 weekend days with data.
+        weekday_p25_glucose: 25th percentile on weekdays, or None if < 5 weekdays.
+        weekday_p50_glucose: Median on weekdays, or None if < 5 weekdays.
+        weekday_p75_glucose: 75th percentile on weekdays, or None if < 5 weekdays.
+        weekend_p25_glucose: 25th percentile on weekends, or None if < 5 weekends.
+        weekend_p50_glucose: Median on weekends, or None if < 5 weekends.
+        weekend_p75_glucose: 75th percentile on weekends, or None if < 5 weekends.
         days_with_data: Distinct calendar days with readings in this bucket.
         reading_count: Total readings in this bucket across all days.
     """
@@ -53,8 +62,17 @@ class BehavioralPattern(BaseModel):
         ..., ge=0.0, description="CV of daily means (lower=more consistent)"
     )
     avg_glucose: float = Field(..., ge=40.0, le=400.0)
+    p25_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    p50_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    p75_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
     weekday_avg_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
     weekend_avg_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    weekday_p25_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    weekday_p50_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    weekday_p75_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    weekend_p25_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    weekend_p50_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
+    weekend_p75_glucose: Optional[float] = Field(None, ge=40.0, le=400.0)
     days_with_data: int = Field(..., ge=1)
     reading_count: int = Field(..., ge=1)
     pct_out_of_range: float = Field(..., ge=0.0, le=1.0, description="Fraction of readings outside 70–180 mg/dL")
@@ -153,6 +171,29 @@ def _get_subset(df: pl.DataFrame, bucket_start: int, window_min: int) -> pl.Data
         )
 
 
+def _subset_percentiles(
+    subset: pl.DataFrame,
+    day_type_filter: Optional[str] = None,
+    min_days: int = MIN_DAYS_FOR_CONSISTENCY,
+) -> tuple[Optional[float], Optional[float], Optional[float]]:
+    """Compute p25/p50/p75 across all readings in a subset.
+
+    Returns (p25, p50, p75) or (None, None, None) if fewer than min_days
+    distinct days have readings in the subset.
+    """
+    if day_type_filter is not None:
+        subset = subset.filter(pl.col("day_type") == day_type_filter)
+    days = subset.select(pl.col("date").n_unique()).item()
+    if days < min_days or subset.height == 0:
+        return None, None, None
+    glucose = subset["glucose"]
+    return (
+        float(glucose.quantile(0.25)),
+        float(glucose.quantile(0.50)),
+        float(glucose.quantile(0.75)),
+    )
+
+
 def _daily_stats(
     subset: pl.DataFrame,
     day_type_filter: Optional[str] = None,
@@ -222,6 +263,9 @@ def _compute_all_buckets(
             cv = std_g / avg_g * 100
         weekday_avg, _ = _daily_stats(subset, "weekday", min_days)
         weekend_avg, _ = _daily_stats(subset, "weekend", min_days)
+        p25, p50, p75 = _subset_percentiles(subset, None, min_days)
+        wd_p25, wd_p50, wd_p75 = _subset_percentiles(subset, "weekday", min_days)
+        we_p25, we_p50, we_p75 = _subset_percentiles(subset, "weekend", min_days)
         out_of_range_count = subset.filter(
             (pl.col("glucose") < 70) | (pl.col("glucose") > 180)
         ).height
@@ -235,6 +279,15 @@ def _compute_all_buckets(
                 "reading_count": subset.height,
                 "weekday_avg_glucose": weekday_avg,
                 "weekend_avg_glucose": weekend_avg,
+                "p25_glucose": p25,
+                "p50_glucose": p50,
+                "p75_glucose": p75,
+                "weekday_p25_glucose": wd_p25,
+                "weekday_p50_glucose": wd_p50,
+                "weekday_p75_glucose": wd_p75,
+                "weekend_p25_glucose": we_p25,
+                "weekend_p50_glucose": we_p50,
+                "weekend_p75_glucose": we_p75,
                 "pct_out_of_range": pct_out_of_range,
             }
         )
@@ -328,8 +381,17 @@ def analyze_behavioral_patterns(
                 consistency_label=b["consistency_label"],
                 cv_score=b["cv_score"],
                 avg_glucose=b["avg_glucose"],
+                p25_glucose=b["p25_glucose"],
+                p50_glucose=b["p50_glucose"],
+                p75_glucose=b["p75_glucose"],
                 weekday_avg_glucose=b["weekday_avg_glucose"],
                 weekend_avg_glucose=b["weekend_avg_glucose"],
+                weekday_p25_glucose=b["weekday_p25_glucose"],
+                weekday_p50_glucose=b["weekday_p50_glucose"],
+                weekday_p75_glucose=b["weekday_p75_glucose"],
+                weekend_p25_glucose=b["weekend_p25_glucose"],
+                weekend_p50_glucose=b["weekend_p50_glucose"],
+                weekend_p75_glucose=b["weekend_p75_glucose"],
                 days_with_data=b["days_with_data"],
                 reading_count=b["reading_count"],
                 pct_out_of_range=b["pct_out_of_range"],

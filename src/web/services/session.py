@@ -31,6 +31,7 @@ class SessionData:
     behavioral_patterns: Optional[dict] = field(default=None)
     overnight_patterns: Optional[dict] = field(default=None)
     anomaly_detection: Optional[dict] = field(default=None)
+    source_url: Optional[str] = field(default=None)
 
 
 class SessionStore:
@@ -52,6 +53,7 @@ class SessionStore:
         behavioral_patterns: Optional[dict] = None,
         overnight_patterns: Optional[dict] = None,
         anomaly_detection: Optional[dict] = None,
+        source_url: Optional[str] = None,
     ) -> None:
         """Store analysis results for a session.
 
@@ -71,6 +73,7 @@ class SessionStore:
             behavioral_patterns=behavioral_patterns,
             overnight_patterns=overnight_patterns,
             anomaly_detection=anomaly_detection,
+            source_url=source_url,
         )
 
     def get(self, session_id: str) -> Optional[SessionData]:

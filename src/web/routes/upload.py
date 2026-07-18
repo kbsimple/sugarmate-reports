@@ -118,7 +118,7 @@ async def _analyze_and_store(
 
         raw_readings = [
             {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
-            for r in readings[:2000]
+            for r in readings[:15000]
         ]
 
         session_id = create_session()
@@ -237,6 +237,10 @@ async def upload_from_url(
         session_id = await _analyze_and_store(
             contents, f"data{ext}", start_date, end_date, exclude_warmup
         )
+        # Store the source URL so the results page can offer a share link
+        session = session_store.get(session_id)
+        if session is not None:
+            session.source_url = url
         return JSONResponse({"session_id": session_id, "redirect": f"/results/{session_id}"})
     except HTTPException:
         raise

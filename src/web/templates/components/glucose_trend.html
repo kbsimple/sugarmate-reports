@@ -9,8 +9,10 @@ Parameters:
         <p class="text-sm text-base-content/60 mb-4">
             Percentage of readings within target range (70–180 mg/dL) for each day.
         </p>
-        <div class="chart-container" style="position: relative; height: 300px;">
-            <canvas id="glucoseTrendChart"></canvas>
+        <div class="overflow-x-auto">
+            <div id="glucoseTrendOuter" style="position: relative; height: 300px; min-width: 100%;">
+                <canvas id="glucoseTrendChart"></canvas>
+            </div>
         </div>
         <div class="flex flex-wrap gap-4 mt-3 justify-center text-sm">
             <div class="flex items-center gap-2">

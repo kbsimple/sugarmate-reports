@@ -135,6 +135,7 @@ async def get_results(request: Request, session_id: str):
             "behavioral_patterns": behavioral_patterns_data,
             "overnight_patterns": overnight_patterns_data,
             "anomaly_detection": anomaly_detection_data,
+            "source_url": session_data.source_url,
         }
     )
 
