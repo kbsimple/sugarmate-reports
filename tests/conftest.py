@@ -6,14 +6,16 @@ Provides fixtures for testing the web interface including:
 - Temporary file handling
 """
 
+import math
 import tempfile
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
 
-from cgm_insights.models import AnalysisResults, TimeInRange
+from cgm_insights.models import AnalysisResults, TimeInRange, CGMReading
 from cgm_insights.analytics import PatternResult, PatternType, PatternSeverity
 from cgm_insights.analytics.behavioral_patterns import analyze_behavioral_patterns
 from cgm_insights.output.suggestions import Suggestion
@@ -210,6 +212,70 @@ def sample_session_with_source_url() -> str:
         patterns=[],
         raw_readings=raw_readings,
         source_url="https://example.com/my-cgm-data.csv",
+    )
+    return session_id
+
+
+@pytest.fixture
+def sample_session_90_days() -> str:
+    """Session with 90 days of readings — used to verify scroll triggers for large periods.
+
+    Uses hourly intervals (24/day) to keep fixture generation fast while
+    still producing 90 distinct calendar dates in glucoseReadings.
+
+    Returns:
+        Session ID string
+    """
+    session_id = create_session()
+    results = generate_sample_results()
+    readings = generate_sample_readings(count=2160, days=90)
+    raw_readings = [
+        {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
+        for r in readings
+    ]
+    session_store.store(
+        session_id,
+        results,
+        patterns=[],
+        raw_readings=raw_readings,
+    )
+    return session_id
+
+
+@pytest.fixture
+def sample_session_with_mid_period_gap() -> str:
+    """Session with a 5-day gap in the middle of a 30-day period.
+
+    Days 0–9 and 15–29 have readings; days 10–14 have none.
+    Used to verify that computeDailyTIR fills the gap with 0% grey bars.
+
+    Returns:
+        Session ID string
+    """
+    import math
+
+    session_id = create_session()
+    results = generate_sample_results()
+    start = datetime(2026, 1, 1, 0, 0)
+    SKIP = {10, 11, 12, 13, 14}
+    readings = []
+    for day in range(30):
+        if day in SKIP:
+            continue
+        day_start = start + timedelta(days=day)
+        for hour in range(0, 24, 2):
+            ts = day_start + timedelta(hours=hour)
+            glucose = max(70.0, min(200.0, 140.0 + 20.0 * math.sin(hour / 6.0)))
+            readings.append(CGMReading(timestamp=ts, glucose_mg_dl=glucose, source="test"))
+    raw_readings = [
+        {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
+        for r in readings
+    ]
+    session_store.store(
+        session_id,
+        results,
+        patterns=[],
+        raw_readings=raw_readings,
     )
     return session_id
 

@@ -457,9 +457,61 @@ class TestResultsTemplateRendering:
         assert match, "glucoseReadings JS constant not found"
         readings = json.loads(match.group(1))
 
-        # Extract unique calendar dates
         dates = sorted({r["timestamp"][:10] for r in readings})
-        assert len(dates) >= 30, f"Expected >= 30 distinct dates, got {len(dates)}: {dates[:5]}…{dates[-5:]}"
+        assert len(dates) >= 30, (
+            f"Expected >= 30 distinct dates, got {len(dates)}: {dates[:5]}…{dates[-5:]}"
+        )
+
+    def test_daily_tir_90_day_readings_in_global(
+        self, test_client: TestClient, sample_session_90_days: str
+    ):
+        """glucoseReadings must span >= 90 days for a 90-day session.
+
+        Regression guard: a raw_readings cap (e.g. [:2000]) would silently truncate
+        90 days of hourly readings (2160 entries) and this test would catch that.
+        """
+        import json
+
+        response = test_client.get(f"/results/{sample_session_90_days}")
+        assert response.status_code == 200
+
+        match = re.search(r'const glucoseReadings\s*=\s*(\[.*?\]);', response.text, re.DOTALL)
+        assert match, "glucoseReadings JS constant not found"
+        readings = json.loads(match.group(1))
+
+        dates = sorted({r["timestamp"][:10] for r in readings})
+        assert len(dates) >= 90, (
+            f"Expected >= 90 distinct dates for 90-day session, got {len(dates)}"
+        )
+
+    def test_daily_tir_scroll_container_ids_present(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """Scroll container and hint elements must have the IDs that JS targets.
+
+        Regression guard for the JS that:
+        - expands glucoseTrendOuter width for large datasets
+        - shows/hides glucoseTrendScrollHint based on overflow
+        - attaches drag-to-scroll to glucoseTrendScroll
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+        assert response.status_code == 200
+        body = response.text
+
+        assert 'id="glucoseTrendScroll"' in body, "glucoseTrendScroll ID missing"
+        assert 'id="glucoseTrendScrollHint"' in body, "glucoseTrendScrollHint ID missing"
+
+    def test_daily_tir_no_data_legend_item_present(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """'No data' legend entry must be rendered in the Daily TIR card.
+
+        Regression guard: the grey 'No data' bar color is meaningless without
+        a matching legend entry explaining it to the user.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+        assert response.status_code == 200
+        assert "No data" in response.text
 
     # ── Feature: ToD box-plot canvases + percentile data (Task 5) ───────────────
 
