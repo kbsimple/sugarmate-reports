@@ -219,24 +219,38 @@ function _makeTodBoxChart(canvasId, labels, pts) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return null;
 
-    const hasBox = pts.some(d => d.p25 !== null && d.p75 !== null);
+    const hasPercentiles = pts.some(d => d.p25 !== null && d.p75 !== null);
 
+    // Build datasets. IQR band uses fill-between-lines:
+    //   datasets[0] = p75 upper boundary, fill: '+1' → fills down to datasets[1]
+    //   datasets[1] = p25 lower boundary, fill: false (floor of the filled area)
+    // Both boundary lines are invisible (no border); only the fill shows.
     const datasets = [];
 
-    if (hasBox) {
+    if (hasPercentiles) {
         datasets.push({
             label: 'IQR (25th–75th %ile)',
-            data: pts.map(d => (d.p25 !== null && d.p75 !== null) ? [d.p25, d.p75] : null),
-            backgroundColor: 'rgba(99,102,241,0.18)',
-            borderColor: 'rgba(99,102,241,0.45)',
-            borderWidth: 1,
-            borderRadius: 2,
-            order: 2,
+            data: pts.map(d => d.p75 !== null ? Math.round(d.p75 * 10) / 10 : null),
+            backgroundColor: 'rgba(99,102,241,0.22)',
+            borderColor: 'transparent',
+            borderWidth: 0,
+            pointRadius: 0,
+            fill: '+1',
+            tension: 0.3,
+        });
+        datasets.push({
+            label: '',
+            data: pts.map(d => d.p25 !== null ? Math.round(d.p25 * 10) / 10 : null),
+            backgroundColor: 'transparent',
+            borderColor: 'transparent',
+            borderWidth: 0,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.3,
         });
     }
 
     datasets.push({
-        type: 'line',
         label: 'Median (50th %ile)',
         data: pts.map(d => d.p50 !== null ? Math.round(d.p50 * 10) / 10 : null),
         borderColor: 'rgba(99,102,241,1)',
@@ -245,27 +259,24 @@ function _makeTodBoxChart(canvasId, labels, pts) {
         pointRadius: 3,
         pointHoverRadius: 5,
         tension: 0.3,
-        order: 0,
+        fill: false,
     });
 
     datasets.push({
-        type: 'line',
         label: 'Mean',
         data: pts.map(d => d.avg !== null ? Math.round(d.avg * 10) / 10 : null),
-        borderColor: 'rgba(239,68,68,0.65)',
+        borderColor: 'rgba(239,68,68,0.75)',
         backgroundColor: 'transparent',
         borderWidth: 1.5,
         borderDash: [5, 3],
         pointRadius: 2,
         pointHoverRadius: 4,
         tension: 0.3,
-        order: 1,
+        fill: false,
     });
 
-    const yMin = 40, yMax = 350;
-
     return new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         plugins: [_todTargetBandPlugin],
         data: { labels, datasets },
         options: {
@@ -278,7 +289,7 @@ function _makeTodBoxChart(canvasId, labels, pts) {
                     ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }
                 },
                 y: {
-                    min: yMin, max: yMax,
+                    min: 40, max: 350,
                     title: { display: true, text: 'Glucose (mg/dL)' },
                     grid: { color: 'rgba(0,0,0,0.05)' }
                 }
@@ -287,15 +298,17 @@ function _makeTodBoxChart(canvasId, labels, pts) {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: { boxWidth: 16, padding: 10, font: { size: 11 } }
+                    labels: {
+                        boxWidth: 16,
+                        padding: 10,
+                        font: { size: 11 },
+                        filter: item => item.text !== ''
+                    }
                 },
                 tooltip: {
                     callbacks: {
-                        label: (item) => {
-                            if (item.raw === null) return null;
-                            if (Array.isArray(item.raw)) {
-                                return `${item.dataset.label}: ${item.raw[0]}–${item.raw[1]} mg/dL`;
-                            }
+                        label: item => {
+                            if (item.raw === null || item.dataset.label === '') return null;
                             return `${item.dataset.label}: ${item.raw} mg/dL`;
                         }
                     }
