@@ -356,3 +356,154 @@ class TestResultsTemplateRendering:
         assert "computeWindowDetails" in body
         # The 'Time Windows to Focus On' card must exist
         assert "Time Windows to Focus On" in body
+
+    # ── Feature: formal percentile labels (Task 2) ──────────────────────────────
+
+    def test_percentile_labels_are_formal(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """Glucose Percentiles card must use '50th/70th/90th Percentile', not 'p50/p70/p90'.
+
+        Regression guard: prevents reverting to the terse p-notation labels.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        body = response.text
+        assert "50th Percentile" in body
+        assert "70th Percentile" in body
+        assert "90th Percentile" in body
+
+    def test_old_pnotation_labels_absent(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """Terse p-notation labels ('>p50<', '>p70<', '>p90<') must not appear in the rendered page.
+
+        Matches the exact rendered tag content so Jinja2 variable references
+        (e.g. results.p50_glucose) don't trigger a false positive.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        body = response.text
+        # The rendered text content of the label spans must not contain bare p-notation
+        assert ">p50<" not in body
+        assert ">p70<" not in body
+        assert ">p90<" not in body
+
+    # ── Feature: share button (Task 1) ──────────────────────────────────────────
+
+    def test_share_button_present_when_source_url_set(
+        self, test_client: TestClient, sample_session_with_source_url: str
+    ):
+        """Share button must appear when the session was loaded from a URL.
+
+        Regression guard: ensures the Alpine.js share button and clipboard JS
+        are rendered when source_url is present in the session.
+        """
+        response = test_client.get(f"/results/{sample_session_with_source_url}")
+
+        assert response.status_code == 200
+        body = response.text
+        assert "navigator.clipboard" in body
+        assert "encodeURIComponent" in body
+        assert "Share" in body
+
+    def test_share_button_absent_without_source_url(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """Share button must not appear when the session was loaded via file upload.
+
+        Regression guard: file-upload sessions have no source_url so the share
+        button block must be entirely absent from the rendered HTML.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        # The clipboard JS only appears inside the source_url-conditional block
+        assert "navigator.clipboard" not in response.text
+
+    # ── Feature: daily TIR scrollable wrapper (Task 3) ──────────────────────────
+
+    def test_daily_tir_has_scrollable_wrapper(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """Daily TIR chart must be wrapped in a horizontally-scrollable container.
+
+        Regression guard: the glucoseTrendOuter div is required by the JS that
+        dynamically expands chart width when the period has many days.
+        """
+        response = test_client.get(f"/results/{sample_session_id}")
+
+        assert response.status_code == 200
+        body = response.text
+        assert 'id="glucoseTrendOuter"' in body
+        assert "overflow-x-auto" in body
+
+    # ── Feature: ToD box-plot canvases + percentile data (Task 5) ───────────────
+
+    def test_tod_weekday_weekend_canvases_present_with_behavioral_data(
+        self, test_client: TestClient, sample_session_with_behavioral_patterns: str
+    ):
+        """All three ToD chart canvases must be present when behavioral data is available.
+
+        Regression guard: the three-column inline layout requires all three
+        canvas IDs to be rendered so JS can target them.
+        """
+        response = test_client.get(f"/results/{sample_session_with_behavioral_patterns}")
+
+        assert response.status_code == 200
+        body = response.text
+        assert 'id="dailyPatternsChartAll"' in body
+        assert 'id="dailyPatternsChartWeekdays"' in body
+        assert 'id="dailyPatternsChartWeekends"' in body
+
+    def test_behavioral_patterns_js_global_contains_percentile_fields(
+        self, test_client: TestClient, sample_session_with_behavioral_patterns: str
+    ):
+        """The behavioralPatterns JS global must include p25_glucose, p50_glucose, p75_glucose.
+
+        Regression guard: if the backend model stops computing percentiles the
+        JS fill-between-lines IQR band silently disappears. This test verifies
+        the data reaches the browser.
+        """
+        response = test_client.get(f"/results/{sample_session_with_behavioral_patterns}")
+
+        assert response.status_code == 200
+        body = response.text
+        # All three keys must appear inside the serialised JS constant
+        assert '"p25_glucose"' in body
+        assert '"p50_glucose"' in body
+        assert '"p75_glucose"' in body
+
+    def test_behavioral_patterns_percentile_values_are_not_null(
+        self, test_client: TestClient, sample_session_with_behavioral_patterns: str
+    ):
+        """Serialised behavioralPatterns must contain non-null percentile values.
+
+        Regression guard: confirms that the session fixture (14 days) produces
+        enough data that p25/p50/p75 are populated, not null, in the HTML payload.
+        """
+        import json, re
+
+        response = test_client.get(f"/results/{sample_session_with_behavioral_patterns}")
+        assert response.status_code == 200
+
+        # Extract the JS constant value from the script block
+        match = re.search(
+            r'const behavioralPatterns\s*=\s*(\{.*?\});',
+            response.text,
+            re.DOTALL,
+        )
+        assert match, "behavioralPatterns JS constant not found"
+        bp = json.loads(match.group(1))
+
+        hourly = [
+            p for p in bp["patterns"]
+            if p["window_size_min"] == 60 and p["bucket_start_minute"] % 60 == 0
+        ]
+        assert len(hourly) > 0, "No hourly patterns in JS global"
+        # At least one hourly bucket must have a non-null p25
+        assert any(p["p25_glucose"] is not None for p in hourly), (
+            "All p25_glucose values are null — IQR band will be invisible"
+        )

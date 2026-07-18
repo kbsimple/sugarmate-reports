@@ -192,6 +192,29 @@ def sample_session_with_oor_behavioral_patterns() -> str:
 
 
 @pytest.fixture
+def sample_session_with_source_url() -> str:
+    """Session that was loaded from a URL — source_url is populated.
+
+    Used to verify the share button appears on the results page.
+    """
+    session_id = create_session()
+    results = generate_sample_results()
+    readings = generate_sample_readings(count=500, days=14)
+    raw_readings = [
+        {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
+        for r in readings
+    ]
+    session_store.store(
+        session_id,
+        results,
+        patterns=[],
+        raw_readings=raw_readings,
+        source_url="https://example.com/my-cgm-data.csv",
+    )
+    return session_id
+
+
+@pytest.fixture
 def temp_upload_dir() -> Generator[Path, None, None]:
     """Create a temporary directory for file uploads.
 

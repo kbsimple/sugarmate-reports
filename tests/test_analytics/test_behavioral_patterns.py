@@ -288,3 +288,104 @@ def test_behavioral_pattern_is_immutable():
     )
     with pytest.raises(Exception):  # ValidationError from Pydantic frozen model
         pattern.avg_glucose = 999.0
+
+
+# --- Tests 13-16: Percentile fields (p25/p50/p75) on hourly buckets ---
+
+def _variable_readings(n_days: int, base_glucose: float = 120.0) -> list:
+    """n_days of 5-min readings with sawtooth glucose variation (40 mg/dL swing)."""
+    from datetime import datetime, timedelta
+    from cgm_insights.models import CGMReading
+
+    start = datetime(2024, 1, 8, 0, 0)  # Monday
+    readings = []
+    for day in range(n_days):
+        day_start = start + timedelta(days=day)
+        for i, minute in enumerate(range(0, 1440, 5)):
+            # Sawtooth: oscillates between base_glucose-20 and base_glucose+20
+            offset = (i % 24) * (40 / 23) - 20
+            readings.append(CGMReading(
+                timestamp=day_start + timedelta(minutes=minute),
+                glucose_mg_dl=max(41.0, base_glucose + offset),
+                source="test",
+            ))
+    return readings
+
+
+def test_hourly_buckets_have_non_null_percentiles_with_sufficient_data():
+    """p25, p50, p75 must be non-None on hourly patterns when >= 5 days of data."""
+    readings = _variable_readings(n_days=7)
+    result = analyze_behavioral_patterns(readings)
+    hourly = [
+        p for p in result.patterns
+        if p.window_size_min == 60 and p.bucket_start_minute % 60 == 0
+    ]
+    assert len(hourly) > 0, "Expected hourly patterns"
+    for p in hourly:
+        assert p.p25_glucose is not None, f"p25 is None for bucket {p.bucket_label}"
+        assert p.p50_glucose is not None, f"p50 is None for bucket {p.bucket_label}"
+        assert p.p75_glucose is not None, f"p75 is None for bucket {p.bucket_label}"
+
+
+def test_hourly_percentile_ordering():
+    """p25 <= p50 <= p75 must hold for every hourly bucket."""
+    readings = _variable_readings(n_days=7)
+    result = analyze_behavioral_patterns(readings)
+    hourly = [
+        p for p in result.patterns
+        if p.window_size_min == 60 and p.bucket_start_minute % 60 == 0
+        and p.p25_glucose is not None
+    ]
+    for p in hourly:
+        assert p.p25_glucose <= p.p50_glucose, (
+            f"{p.bucket_label}: p25={p.p25_glucose} > p50={p.p50_glucose}"
+        )
+        assert p.p50_glucose <= p.p75_glucose, (
+            f"{p.bucket_label}: p50={p.p50_glucose} > p75={p.p75_glucose}"
+        )
+
+
+def test_weekday_percentiles_none_with_too_few_weekdays():
+    """weekday_p25/p50/p75 are None when fewer than 5 weekdays have data.
+
+    5 days Mon-Fri is exactly the minimum. Using only 4 days (Mon-Thu) means
+    there are only 4 weekdays, so weekday percentiles must be None.
+    """
+    from datetime import datetime, timedelta
+    from cgm_insights.models import CGMReading
+
+    # 4 weekdays only (Mon–Thu), which is below the 5-day threshold
+    start = datetime(2024, 1, 8, 0, 0)  # Monday
+    readings = []
+    for day in range(4):
+        day_start = start + timedelta(days=day)
+        for minute in range(0, 1440, 5):
+            readings.append(CGMReading(
+                timestamp=day_start + timedelta(minutes=minute),
+                glucose_mg_dl=float(100 + day * 10),
+                source="test",
+            ))
+    result = analyze_behavioral_patterns(readings)
+    # 4 days < 5 → insufficient_data
+    assert result.insufficient_data is True or all(
+        p.weekday_p25_glucose is None
+        for p in result.patterns
+        if p.window_size_min == 60 and p.bucket_start_minute % 60 == 0
+    )
+
+
+def test_percentiles_serialise_in_model_dump():
+    """model_dump() must include p25/p50/p75 keys so the JS global receives them."""
+    readings = _variable_readings(n_days=7)
+    result = analyze_behavioral_patterns(readings)
+    dumped = result.model_dump()
+    hourly = [
+        p for p in dumped["patterns"]
+        if p["window_size_min"] == 60 and p["bucket_start_minute"] % 60 == 0
+    ]
+    assert len(hourly) > 0
+    sample = hourly[0]
+    assert "p25_glucose" in sample
+    assert "p50_glucose" in sample
+    assert "p75_glucose" in sample
+    assert sample["p25_glucose"] is not None
