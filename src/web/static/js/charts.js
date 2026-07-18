@@ -93,14 +93,36 @@ function computeDailyTIR(readings) {
         byDate[isoKey].total++;
         if (r.glucose >= 70 && r.glucose <= 180) byDate[isoKey].inRange++;
     }
-    return Object.entries(byDate)
-        .sort(([, a], [, b]) => a.ts - b.ts)
-        .map(([, v]) => ({
-            date: v.dateStr,
-            pctInRange: Math.round(v.inRange / v.total * 100),
-            total: v.total,
-            inRange: v.inRange
-        }));
+
+    const sorted = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b));
+    if (sorted.length === 0) return [];
+
+    // Fill the entire date range so no-reading days appear as 0% bars
+    const result = [];
+    const firstKey = sorted[0][0];
+    const lastKey = sorted[sorted.length - 1][0];
+    const cursor = new Date(firstKey + 'T00:00:00');
+    const end = new Date(lastKey + 'T00:00:00');
+
+    while (cursor <= end) {
+        const isoKey = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+        const dateStr = cursor.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const v = byDate[isoKey];
+        result.push(v
+            ? { date: v.dateStr, pctInRange: Math.round(v.inRange / v.total * 100), total: v.total, inRange: v.inRange, hasData: true }
+            : { date: dateStr, pctInRange: 0, total: 0, inRange: 0, hasData: false }
+        );
+        cursor.setDate(cursor.getDate() + 1);
+    }
+    return result;
+}
+
+function _enableDragScroll(el) {
+    let isDown = false, startX, scrollLeft;
+    el.addEventListener('mousedown', e => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; el.style.cursor = 'grabbing'; });
+    el.addEventListener('mouseleave', () => { isDown = false; el.style.cursor = 'grab'; });
+    el.addEventListener('mouseup', () => { isDown = false; el.style.cursor = 'grab'; });
+    el.addEventListener('mousemove', e => { if (!isDown) return; e.preventDefault(); el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX); });
 }
 
 function createGlucoseTrendChart(canvasId, data) {
@@ -111,20 +133,30 @@ function createGlucoseTrendChart(canvasId, data) {
     const daily = computeDailyTIR(data);
     if (daily.length === 0) return null;
 
-    // Expand the chart width when there are many days so bars stay readable
+    // Each bar gets a fixed pixel budget so the chart grows beyond the viewport and becomes scrollable
+    const BAR_PX = 32;
+    const scroll = document.getElementById('glucoseTrendScroll');
     const wrapper = document.getElementById('glucoseTrendOuter');
-    if (wrapper && daily.length > 20) {
-        wrapper.style.width = Math.max(daily.length * 38, wrapper.offsetWidth) + 'px';
+    if (wrapper) {
+        const needed = daily.length * BAR_PX;
+        if (needed > wrapper.offsetWidth) {
+            wrapper.style.width = needed + 'px';
+            // Show scroll hint and enable drag-to-scroll
+            const hint = document.getElementById('glucoseTrendScrollHint');
+            if (hint) hint.classList.remove('hidden');
+            if (scroll) _enableDragScroll(scroll);
+        }
     }
 
     const labels = daily.map(d => d.date);
     const values = daily.map(d => d.pctInRange);
 
-    // Color each bar: green ≥70%, yellow 50-70%, red <50%
-    const colors = values.map(v =>
-        v >= 70 ? 'rgba(34,197,94,0.8)' :
-        v >= 50 ? 'rgba(250,204,21,0.85)' :
-                  'rgba(239,68,68,0.8)'
+    // Color each bar: grey for no-data days, then green/yellow/red by TIR
+    const colors = daily.map(d =>
+        !d.hasData         ? 'rgba(156,163,175,0.35)' :
+        d.pctInRange >= 70 ? 'rgba(34,197,94,0.8)'    :
+        d.pctInRange >= 50 ? 'rgba(250,204,21,0.85)'   :
+                             'rgba(239,68,68,0.8)'
     );
 
     // Dashed 70% reference line via custom plugin
@@ -178,6 +210,7 @@ function createGlucoseTrendChart(canvasId, data) {
                     callbacks: {
                         label: (ctx) => {
                             const d = daily[ctx.dataIndex];
+                            if (!d.hasData) return ['No readings recorded'];
                             return [
                                 `In range: ${ctx.raw}%`,
                                 `Readings: ${d.inRange} / ${d.total}`

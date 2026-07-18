@@ -440,6 +440,27 @@ class TestResultsTemplateRendering:
         assert 'id="glucoseTrendOuter"' in body
         assert "overflow-x-auto" in body
 
+    def test_daily_tir_glucose_readings_cover_full_30_day_range(
+        self, test_client: TestClient, sample_session_id: str
+    ):
+        """glucoseReadings JS global must contain readings spanning the full 30-day period.
+
+        Regression guard: ensures that mock data is large enough to cover 30 days
+        and that no silent truncation reduces the date range visible in the chart.
+        """
+        import json
+
+        response = test_client.get(f"/results/{sample_session_id}")
+        assert response.status_code == 200
+
+        match = re.search(r'const glucoseReadings\s*=\s*(\[.*?\]);', response.text, re.DOTALL)
+        assert match, "glucoseReadings JS constant not found"
+        readings = json.loads(match.group(1))
+
+        # Extract unique calendar dates
+        dates = sorted({r["timestamp"][:10] for r in readings})
+        assert len(dates) >= 30, f"Expected >= 30 distinct dates, got {len(dates)}: {dates[:5]}…{dates[-5:]}"
+
     # ── Feature: ToD box-plot canvases + percentile data (Task 5) ───────────────
 
     def test_tod_weekday_weekend_canvases_present_with_behavioral_data(

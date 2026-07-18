@@ -66,7 +66,7 @@ def sample_session_id() -> str:
     """
     session_id = create_session()
     results = generate_sample_results()
-    readings = generate_sample_readings(count=500, days=14)
+    readings = generate_sample_readings(count=8640, days=30)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
         for r in readings
@@ -113,7 +113,7 @@ def sample_session_with_patterns() -> str:
         ),
     ]
 
-    readings = generate_sample_readings(count=500, days=14)
+    readings = generate_sample_readings(count=8640, days=30)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
         for r in readings
@@ -140,8 +140,8 @@ def sample_session_with_behavioral_patterns() -> str:
     """
     session_id = create_session()
     results = generate_sample_results()
-    # 2016 readings over 14 days ≈ 144/day — well above MIN_DAYS=5 threshold
-    readings = generate_sample_readings(count=2016, days=14, avg_glucose=140.0, std_dev=20.0)
+    # 30 days × 288 readings/day — full month, well above MIN_DAYS=5 threshold
+    readings = generate_sample_readings(count=8640, days=30, avg_glucose=140.0, std_dev=20.0)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
         for r in readings
@@ -172,7 +172,7 @@ def sample_session_with_oor_behavioral_patterns() -> str:
     """
     session_id = create_session()
     results = generate_sample_results(avg_glucose=220.0, tir_target=20.0)
-    readings = generate_sample_readings(count=2016, days=14, avg_glucose=220.0, std_dev=15.0)
+    readings = generate_sample_readings(count=8640, days=30, avg_glucose=220.0, std_dev=15.0)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
         for r in readings
@@ -199,7 +199,7 @@ def sample_session_with_source_url() -> str:
     """
     session_id = create_session()
     results = generate_sample_results()
-    readings = generate_sample_readings(count=500, days=14)
+    readings = generate_sample_readings(count=8640, days=30)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
         for r in readings
