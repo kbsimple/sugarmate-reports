@@ -132,6 +132,10 @@ async def get_results(request: Request, session_id: str):
             "suggestions": formatted_suggestions,
             "tir_data": tir_data,
             "glucose_readings": raw_readings,
+            "glucose_date_range": {
+                "start": results.date_range_start.strftime("%Y-%m-%d") if results.date_range_start else None,
+                "end": results.date_range_end.strftime("%Y-%m-%d") if results.date_range_end else None,
+            },
             "behavioral_patterns": behavioral_patterns_data,
             "overnight_patterns": overnight_patterns_data,
             "anomaly_detection": anomaly_detection_data,

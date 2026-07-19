@@ -74,6 +74,33 @@ def _ext_from_response(url: str, headers: httpx.Headers) -> str:
     return ".xlsx"
 
 
+def _downsample_to_5min(readings) -> list[dict]:
+    """Bucket readings into 5-minute slots and return one averaged point per slot.
+
+    High-frequency CGMs (e.g. 1-minute or 2-minute intervals) produce far more
+    readings than 5-minute devices. Without downsampling, the 30-day window for a
+    1-minute CGM has 43 000+ readings, which would be silently truncated and cause
+    the chart to show only the first 10–15 days. Bucketing to 5-minute resolution
+    keeps at most 288 points per day (8 640 for 30 days) regardless of sensor rate.
+    """
+    from collections import defaultdict
+
+    buckets: dict = defaultdict(list)
+    for r in readings:
+        ts = r.timestamp
+        # Round down to the nearest 5-minute boundary
+        bucket_ts = ts.replace(minute=(ts.minute // 5) * 5, second=0, microsecond=0)
+        buckets[bucket_ts].append(r.glucose_mg_dl)
+
+    return [
+        {
+            "timestamp": ts.isoformat(),
+            "glucose": round(sum(vals) / len(vals), 1),
+        }
+        for ts, vals in sorted(buckets.items())
+    ]
+
+
 async def _analyze_and_store(
     contents: bytes,
     filename_hint: str,
@@ -116,10 +143,7 @@ async def _analyze_and_store(
         overnight_result = analyze_overnight_patterns(readings)
         anomaly_result = analyze_anomalies(readings)
 
-        raw_readings = [
-            {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
-            for r in readings[:15000]
-        ]
+        raw_readings = _downsample_to_5min(readings)
 
         session_id = create_session()
         session_store.store(

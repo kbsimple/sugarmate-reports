@@ -61,14 +61,24 @@ def live_server():
 # ── Session helpers ────────────────────────────────────────────────────────────
 
 def _make_session(raw_readings: list[dict]) -> str:
-    """Insert a session directly into the shared store and return its ID."""
+    """Insert a session directly into the shared store and return its ID.
+
+    The date_range on the AnalysisResults is derived from the first and last
+    reading timestamps so glucoseDateRange in JS covers the full reading period.
+    """
+    from datetime import datetime as _dt
+
     sid = create_session()
-    session_store.store(
-        sid,
-        generate_sample_results(),
-        patterns=[],
-        raw_readings=raw_readings,
-    )
+    base = generate_sample_results()
+    if raw_readings:
+        ts_sorted = sorted(r["timestamp"] for r in raw_readings)
+        results = base.model_copy(update={
+            "date_range_start": _dt.fromisoformat(ts_sorted[0]),
+            "date_range_end": _dt.fromisoformat(ts_sorted[-1]),
+        })
+    else:
+        results = base
+    session_store.store(sid, results, patterns=[], raw_readings=raw_readings)
     return sid
 
 

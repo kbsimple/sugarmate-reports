@@ -67,7 +67,7 @@ def sample_session_id() -> str:
         Session ID string
     """
     session_id = create_session()
-    results = generate_sample_results()
+    results = generate_sample_results(days=30)
     readings = generate_sample_readings(count=8640, days=30)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
@@ -92,7 +92,7 @@ def sample_session_with_patterns() -> str:
         Session ID string
     """
     session_id = create_session()
-    results = generate_sample_results()
+    results = generate_sample_results(days=30)
 
     patterns = [
         PatternResult(
@@ -141,7 +141,7 @@ def sample_session_with_behavioral_patterns() -> str:
         Session ID string
     """
     session_id = create_session()
-    results = generate_sample_results()
+    results = generate_sample_results(days=30)
     # 30 days × 288 readings/day — full month, well above MIN_DAYS=5 threshold
     readings = generate_sample_readings(count=8640, days=30, avg_glucose=140.0, std_dev=20.0)
     raw_readings = [
@@ -200,7 +200,7 @@ def sample_session_with_source_url() -> str:
     Used to verify the share button appears on the results page.
     """
     session_id = create_session()
-    results = generate_sample_results()
+    results = generate_sample_results(days=30)
     readings = generate_sample_readings(count=8640, days=30)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
@@ -227,8 +227,8 @@ def sample_session_90_days() -> str:
         Session ID string
     """
     session_id = create_session()
-    results = generate_sample_results()
     readings = generate_sample_readings(count=2160, days=90)
+    results = generate_sample_results(days=90)
     raw_readings = [
         {"timestamp": r.timestamp.isoformat(), "glucose": r.glucose_mg_dl}
         for r in readings
@@ -248,15 +248,20 @@ def sample_session_with_mid_period_gap() -> str:
 
     Days 0–9 and 15–29 have readings; days 10–14 have none.
     Used to verify that computeDailyTIR fills the gap with 0% grey bars.
+    The date range on the results object explicitly covers Jan 1-30 so the
+    server supplies the full range to JS via glucoseDateRange.
 
     Returns:
         Session ID string
     """
-    import math
-
     session_id = create_session()
-    results = generate_sample_results()
     start = datetime(2026, 1, 1, 0, 0)
+    end_dt = datetime(2026, 1, 30, 23, 55)
+    results = generate_sample_results(
+        days=30,
+        date_range_start=start,
+        date_range_end=end_dt,
+    )
     SKIP = {10, 11, 12, 13, 14}
     readings = []
     for day in range(30):

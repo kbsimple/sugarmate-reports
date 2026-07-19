@@ -80,7 +80,7 @@ function createTIRChart(canvasId, data) {
  * @param {Array} readings - Array of {timestamp, glucose}
  * @returns {Array} Sorted array of {date, pctInRange, total, inRange}
  */
-function computeDailyTIR(readings) {
+function computeDailyTIR(readings, dateRange) {
     const byDate = {};
     for (const r of readings) {
         const ts = new Date(r.timestamp);
@@ -97,15 +97,17 @@ function computeDailyTIR(readings) {
     const sorted = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b));
     if (sorted.length === 0) return [];
 
-    // Fill the entire date range so no-reading days appear as 0% bars
+    // Use server-supplied date range when available so the chart fills the full
+    // analysis period even when the sensor was inactive at the start or end.
+    const firstKey = (dateRange && dateRange.start) ? dateRange.start : sorted[0][0];
+    const lastKey  = (dateRange && dateRange.end)   ? dateRange.end   : sorted[sorted.length - 1][0];
+
     const result = [];
-    const firstKey = sorted[0][0];
-    const lastKey = sorted[sorted.length - 1][0];
     const cursor = new Date(firstKey + 'T00:00:00');
-    const end = new Date(lastKey + 'T00:00:00');
+    const end    = new Date(lastKey  + 'T00:00:00');
 
     while (cursor <= end) {
-        const isoKey = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+        const isoKey  = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
         const dateStr = cursor.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         const v = byDate[isoKey];
         result.push(v
@@ -130,7 +132,8 @@ function createGlucoseTrendChart(canvasId, data) {
     if (!ctx) return null;
     if (!data || data.length === 0) return null;
 
-    const daily = computeDailyTIR(data);
+    const dateRange = typeof glucoseDateRange !== 'undefined' ? glucoseDateRange : null;
+    const daily = computeDailyTIR(data, dateRange);
     if (daily.length === 0) return null;
 
     // Each bar gets a fixed pixel budget so the chart grows beyond the viewport and becomes scrollable

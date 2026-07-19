@@ -61,6 +61,9 @@ def generate_sample_results(
     avg_glucose: float = 140.0,
     tir_target: float = 70.0,
     total_readings: int = 288,
+    days: int = 30,
+    date_range_start: Optional[datetime] = None,
+    date_range_end: Optional[datetime] = None,
 ) -> AnalysisResults:
     """Generate sample AnalysisResults for testing.
 
@@ -70,6 +73,9 @@ def generate_sample_results(
         avg_glucose: Average glucose in mg/dL
         tir_target: Time in target range percentage
         total_readings: Total number of readings
+        days: Number of days the analysis spans (sets date_range_*)
+        date_range_start: Explicit start datetime (overrides days calculation)
+        date_range_end: Explicit end datetime (overrides days calculation)
 
     Returns:
         AnalysisResults object with sample data
@@ -81,9 +87,12 @@ def generate_sample_results(
     high = remaining * 0.35
     very_high = remaining * 0.50
 
+    end = date_range_end or datetime.now()
+    start = date_range_start or (end - timedelta(days=days))
+
     return AnalysisResults(
-        date_range_start=datetime.now() - timedelta(days=14),
-        date_range_end=datetime.now(),
+        date_range_start=start,
+        date_range_end=end,
         total_readings=total_readings,
         time_in_range=TimeInRange(
             very_low_pct=round(very_low, 1),
