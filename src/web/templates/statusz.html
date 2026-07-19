@@ -1,22 +1,137 @@
 {% extends "base.html" %}
 {% block title %}Status — CGM Insights{% endblock %}
 {% block content %}
-<div class="max-w-lg mx-auto">
-    <h1 class="text-2xl font-bold mb-6">Service Status</h1>
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <h1 class="text-2xl font-bold">Service Status</h1>
+
+    {# ── Identity ─────────────────────────────────────────────────────────── #}
     <div class="card bg-base-100 shadow">
         <div class="card-body p-0">
+            <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-4 pt-4 pb-2">Identity</h2>
             <table class="table">
                 <tbody>
-                    <tr><th class="w-32 text-base-content/60">service</th><td>{{ info.service }}</td></tr>
-                    <tr><th class="text-base-content/60">status</th><td><span class="badge badge-success">{{ info.status }}</span></td></tr>
-                    <tr><th class="text-base-content/60">version</th><td>{{ info.version }}</td></tr>
-                    <tr><th class="text-base-content/60">commit</th><td class="font-mono text-sm">{{ info.commitShort }} <span class="text-base-content/40">({{ info.commit }})</span></td></tr>
-                    <tr><th class="text-base-content/60">branch</th><td class="font-mono text-sm">{{ info.branch }}</td></tr>
-                    <tr><th class="text-base-content/60">context</th><td>{{ info.context }}</td></tr>
-                    <tr><th class="text-base-content/60">python</th><td class="font-mono text-sm">{{ info.python }}</td></tr>
+                    <tr>
+                        <th class="w-36 text-base-content/60">service</th>
+                        <td>{{ info.service }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">status</th>
+                        <td><span class="badge badge-success">{{ info.status }}</span></td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">version</th>
+                        <td class="font-mono text-sm">{{ info.version }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">release date</th>
+                        <td class="font-mono text-sm">{{ info.release_date }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">commit</th>
+                        <td class="font-mono text-sm">
+                            {{ info.commit_short }}
+                            <span class="text-base-content/40 text-xs ml-1">({{ info.commit }})</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">branch</th>
+                        <td class="font-mono text-sm">{{ info.branch }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">context</th>
+                        <td>{{ info.context }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    {# ── Runtime ──────────────────────────────────────────────────────────── #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body p-0">
+            <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-4 pt-4 pb-2">Runtime</h2>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th class="w-36 text-base-content/60">uptime</th>
+                        <td>{{ info.uptime }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">pid</th>
+                        <td class="font-mono text-sm">{{ info.pid }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">memory (RSS)</th>
+                        <td class="font-mono text-sm">{{ info.memory }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">python</th>
+                        <td class="font-mono text-sm">{{ info.python }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ── Session activity ─────────────────────────────────────────────────── #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body p-0">
+            <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-4 pt-4 pb-2">Session Activity</h2>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th class="w-36 text-base-content/60">active sessions</th>
+                        <td>{{ info.session_count }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-base-content/60">readings in memory</th>
+                        <td>{{ "{:,}".format(info.total_readings) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ── Features ─────────────────────────────────────────────────────────── #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body p-0">
+            <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-4 pt-4 pb-2">Features</h2>
+            <table class="table">
+                <tbody>
+                    {% for name, enabled in info.features.items() %}
+                    <tr>
+                        <th class="w-36 text-base-content/60">{{ name }}</th>
+                        <td>
+                            {% if enabled %}
+                            <span class="badge badge-success badge-outline">enabled</span>
+                            {% else %}
+                            <span class="badge badge-ghost badge-outline">disabled</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ── Dependencies ─────────────────────────────────────────────────────── #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body p-0">
+            <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-4 pt-4 pb-2">Key Dependencies</h2>
+            <table class="table">
+                <tbody>
+                    {% for name, ver in info.deps.items() %}
+                    <tr>
+                        <th class="w-36 text-base-content/60">{{ name }}</th>
+                        <td class="font-mono text-sm">{{ ver }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
