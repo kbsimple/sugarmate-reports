@@ -38,7 +38,7 @@ MIN_CONSISTENCY: float = 0.60   # ≥60 % of covered days must show the trend
 MIN_MAGNITUDE_MG_DL: float = 8.0
 COVERAGE_THRESHOLD: float = 0.40  # day needs ≥40 % of window slots filled
 MIN_WINDOW_SLOTS: int = 2        # 1-hour minimum
-MAX_WINDOW_SLOTS: int = 20       # 10-hour maximum
+MAX_WINDOW_SLOTS: int = 6        # 3-hour maximum
 MAX_TRENDS: int = 5
 
 

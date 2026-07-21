@@ -255,64 +255,22 @@ function _makeTodBoxChart(canvasId, labels, pts) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return null;
 
-    const hasPercentiles = pts.some(d => d.p25 !== null && d.p75 !== null);
-
-    // Build datasets. IQR band uses fill-between-lines:
-    //   datasets[0] = p75 upper boundary, fill: '+1' → fills down to datasets[1]
-    //   datasets[1] = p25 lower boundary, fill: false (floor of the filled area)
-    // Both boundary lines are invisible (no border); only the fill shows.
-    const datasets = [];
-
-    if (hasPercentiles) {
-        datasets.push({
-            label: 'IQR (25th–75th %ile)',
-            data: pts.map(d => d.p75 !== null ? Math.round(d.p75 * 10) / 10 : null),
-            backgroundColor: 'rgba(99,102,241,0.22)',
-            borderColor: 'transparent',
-            borderWidth: 0,
-            pointRadius: 0,
-            fill: '+1',
-            tension: 0.3,
-        });
-        datasets.push({
-            label: '',
-            data: pts.map(d => d.p25 !== null ? Math.round(d.p25 * 10) / 10 : null),
-            backgroundColor: 'transparent',
-            borderColor: 'transparent',
-            borderWidth: 0,
-            pointRadius: 0,
-            fill: false,
-            tension: 0.3,
-        });
-    }
-
-    datasets.push({
-        label: 'Median (50th %ile)',
-        data: pts.map(d => d.p50 !== null ? Math.round(d.p50 * 10) / 10 : null),
-        borderColor: 'rgba(99,102,241,1)',
-        backgroundColor: 'transparent',
-        borderWidth: 2.5,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        tension: 0.3,
-        fill: false,
-    });
-
-    datasets.push({
-        label: 'Mean',
+    const datasets = [{
+        label: 'Avg Glucose',
         data: pts.map(d => d.avg !== null ? Math.round(d.avg * 10) / 10 : null),
-        borderColor: 'rgba(239,68,68,0.75)',
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderDash: [5, 3],
-        pointRadius: 2,
-        pointHoverRadius: 4,
-        tension: 0.3,
-        fill: false,
-    });
+        backgroundColor: pts.map(d => {
+            if (d.avg === null) return 'transparent';
+            if (d.avg < 70) return 'rgba(239,68,68,0.65)';
+            if (d.avg <= 180) return 'rgba(34,197,94,0.65)';
+            if (d.avg <= 250) return 'rgba(245,158,11,0.65)';
+            return 'rgba(239,68,68,0.65)';
+        }),
+        borderRadius: 3,
+        borderSkipped: false,
+    }];
 
     return new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         plugins: [_todTargetBandPlugin],
         data: { labels, datasets },
         options: {
@@ -334,19 +292,11 @@ function _makeTodBoxChart(canvasId, labels, pts) {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: {
-                        boxWidth: 16,
-                        padding: 10,
-                        font: { size: 11 },
-                        filter: item => item.text !== ''
-                    }
+                    labels: { boxWidth: 16, padding: 10, font: { size: 11 } }
                 },
                 tooltip: {
                     callbacks: {
-                        label: item => {
-                            if (item.raw === null || item.dataset.label === '') return null;
-                            return `${item.dataset.label}: ${item.raw} mg/dL`;
-                        }
+                        label: item => item.raw !== null ? `${item.dataset.label}: ${item.raw} mg/dL` : null
                     }
                 }
             }
