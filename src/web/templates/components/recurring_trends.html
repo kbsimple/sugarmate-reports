@@ -3,30 +3,37 @@
     <div class="card-body">
         <h3 class="card-title text-lg">Recurring Trends</h3>
         <p class="text-sm text-base-content/60 mb-4">
-            Consistent glucose movements identified within the last
-            {{ recurring_trends.days_analyzed }} days, grouped by 30-minute window.
+            Time-of-day patterns that were consistently active during a specific
+            {{ recurring_trends.days_analyzed }}-day period — patterns that may not
+            be visible in the aggregate hourly charts above.
         </p>
 
         <div class="space-y-6">
             {% for trend in recurring_trends.trends %}
             <div class="border border-base-200 rounded-lg p-4">
-                <!-- Header row -->
+
+                <!-- Direction badge + date window -->
                 <div class="flex items-start justify-between mb-1">
                     <div>
-                        <h4 class="font-semibold text-base">
-                            {% if trend.direction == 'rising' %}↑{% else %}↓{% endif %}
-                            {{ trend.start_label }} – {{ trend.end_label }}
-                        </h4>
-                        <p class="text-sm text-base-content/60">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="badge badge-outline badge-lg
+                                {% if trend.direction == 'rising' %}badge-warning{% else %}badge-info{% endif %}">
+                                {% if trend.direction == 'rising' %}↑ Rising{% else %}↓ Falling{% endif %}
+                            </span>
+                            <span class="font-semibold text-base">
+                                {{ trend.start_label }} – {{ trend.end_label }}
+                            </span>
+                        </div>
+                        <p class="text-sm font-medium text-base-content/70">
+                            {{ trend.date_range_label }}
+                            <span class="text-base-content/40 font-normal">({{ trend.calendar_days }} days)</span>
+                        </p>
+                        <p class="text-sm text-base-content/50 mt-0.5">
                             {{ trend.days_observed }} of {{ trend.days_available }} days
                             &middot; {{ trend.consistency_pct }}% consistent
                             &middot; avg {{ trend.avg_change_mg_dl | round(0) | int }} mg/dL change
                         </p>
                     </div>
-                    <span class="badge badge-outline badge-lg
-                        {% if trend.direction == 'rising' %}badge-warning{% else %}badge-info{% endif %}">
-                        {% if trend.direction == 'rising' %}Rising{% else %}Falling{% endif %}
-                    </span>
                 </div>
 
                 <!-- IQR chart -->
@@ -35,20 +42,21 @@
                 </div>
 
                 <!-- Legend -->
-                <div class="flex items-center gap-4 mt-2 text-xs text-base-content/50">
-                    <span class="flex items-center gap-1">
-                        <span class="inline-block w-5 h-0.5
-                            {% if trend.direction == 'rising' %}bg-amber-500{% else %}bg-indigo-500{% endif %}">
+                <div class="flex items-center gap-4 mt-2 text-xs text-base-content/40">
+                    <span class="flex items-center gap-1.5">
+                        <span class="inline-block w-6 border-t-2
+                            {% if trend.direction == 'rising' %}border-amber-500{% else %}border-indigo-500{% endif %}">
                         </span>
                         Median
                     </span>
-                    <span class="flex items-center gap-1">
-                        <span class="inline-block w-5 h-3 rounded opacity-30
+                    <span class="flex items-center gap-1.5">
+                        <span class="inline-block w-6 h-3 rounded opacity-25
                             {% if trend.direction == 'rising' %}bg-amber-400{% else %}bg-indigo-400{% endif %}">
                         </span>
                         IQR (25th–75th percentile)
                     </span>
                 </div>
+
             </div>
             {% endfor %}
         </div>
