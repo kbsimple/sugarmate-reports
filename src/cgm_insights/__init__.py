@@ -39,6 +39,9 @@ from .analytics import (
     OvernightAnalysisResult,
     analyze_anomalies,
     AnomalyDetectionResult,
+    analyze_recurring_trends,
+    RecurringTrend,
+    RecurringTrendsResult,
 )
 from .output import (
     format_results,
@@ -77,6 +80,10 @@ __all__ = [
     # Anomaly detection (Phase 6)
     "analyze_anomalies",
     "AnomalyDetectionResult",
+    # Recurring trend detection
+    "analyze_recurring_trends",
+    "RecurringTrend",
+    "RecurringTrendsResult",
     # Output
     "format_results",
     "format_quality_flags",

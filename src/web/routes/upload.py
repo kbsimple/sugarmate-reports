@@ -22,6 +22,7 @@ from cgm_insights.analytics import detect_day_of_week_patterns, detect_time_of_d
 from cgm_insights.analytics.anomaly_detection import analyze_anomalies
 from cgm_insights.analytics.behavioral_patterns import analyze_behavioral_patterns
 from cgm_insights.analytics.overnight_patterns import analyze_overnight_patterns
+from cgm_insights.analytics.recurring_trends import analyze_recurring_trends
 from cgm_insights.ingestion import exclude_warmup_period, get_parser
 
 router = APIRouter()
@@ -142,6 +143,7 @@ async def _analyze_and_store(
         behavioral_result = analyze_behavioral_patterns(readings)
         overnight_result = analyze_overnight_patterns(readings)
         anomaly_result = analyze_anomalies(readings)
+        recurring_result = analyze_recurring_trends(readings)
 
         raw_readings = _downsample_to_5min(readings)
 
@@ -154,6 +156,7 @@ async def _analyze_and_store(
             behavioral_patterns=behavioral_result.model_dump(),
             overnight_patterns=overnight_result.model_dump(),
             anomaly_detection=anomaly_result.model_dump(),
+            recurring_trends=recurring_result.model_dump(),
         )
         return session_id
 

@@ -79,6 +79,9 @@ async def get_results(request: Request, session_id: str):
     # Extract anomaly detection from session (Phase 6)
     anomaly_detection_data = session_data.anomaly_detection  # dict or None
 
+    # Extract recurring trends from session
+    recurring_trends_data = session_data.recurring_trends  # dict or None
+
     # Add anomaly suggestions if analysis succeeded
     if anomaly_detection_data and not anomaly_detection_data.get("insufficient_data", True):
         anomaly_result = AnomalyDetectionResult.model_validate(anomaly_detection_data)
@@ -139,6 +142,7 @@ async def get_results(request: Request, session_id: str):
             "behavioral_patterns": behavioral_patterns_data,
             "overnight_patterns": overnight_patterns_data,
             "anomaly_detection": anomaly_detection_data,
+            "recurring_trends": recurring_trends_data,
             "source_url": session_data.source_url,
         }
     )
@@ -183,4 +187,5 @@ async def get_results_data(session_id: str):
         "behavioral_patterns": session_data.behavioral_patterns,
         "overnight_patterns": session_data.overnight_patterns,
         "anomaly_detection": session_data.anomaly_detection,
+        "recurring_trends": session_data.recurring_trends,
     }

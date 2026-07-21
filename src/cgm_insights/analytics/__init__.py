@@ -28,6 +28,11 @@ from .anomaly_detection import (
     analyze_anomalies,
     AnomalyDetectionResult,
 )
+from .recurring_trends import (
+    analyze_recurring_trends,
+    RecurringTrend,
+    RecurringTrendsResult,
+)
 
 __all__ = [
     # Metrics
@@ -53,4 +58,8 @@ __all__ = [
     # Anomaly detection (Phase 6)
     "analyze_anomalies",
     "AnomalyDetectionResult",
+    # Recurring trend detection
+    "analyze_recurring_trends",
+    "RecurringTrend",
+    "RecurringTrendsResult",
 ]

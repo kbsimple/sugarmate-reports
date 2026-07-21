@@ -527,6 +527,104 @@ function createBehavioralPatternsLineChart(canvasId, bp) {
     });
 }
 
+// ─── Recurring Trend IQR chart ────────────────────────────────────────────────
+
+/**
+ * Render a single recurring trend as a line chart with IQR shading.
+ *
+ * @param {string} canvasId - id of the <canvas> element
+ * @param {Object} trend    - RecurringTrend object from recurringTrends.trends[]
+ */
+function createRecurringTrendChart(canvasId, trend) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const slots   = trend.slots;
+    const labels  = slots.map(s => s.label);
+    const q1      = slots.map(s => s.q1);
+    const medians = slots.map(s => s.median);
+    const q3      = slots.map(s => s.q3);
+
+    const isRising = trend.direction === 'rising';
+    const rgb   = isRising ? '245,158,11' : '99,102,241';
+    const solid = isRising ? '#f59e0b'    : '#6366f1';
+
+    const allVals = [...q1, ...medians, ...q3].filter(v => v != null);
+    const yMin = allVals.length ? Math.max(40,  Math.floor(Math.min(...allVals) - 15)) : 40;
+    const yMax = allVals.length ? Math.min(400, Math.ceil(Math.max(...allVals)  + 15)) : 300;
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                // Q3 fills toward dataset[+1] (Q1), creating the IQR band
+                {
+                    label: 'Q3',
+                    data: q3,
+                    fill: '+1',
+                    backgroundColor: `rgba(${rgb},0.15)`,
+                    borderColor: `rgba(${rgb},0.25)`,
+                    borderWidth: 1,
+                    borderDash: [3, 3],
+                    pointRadius: 0,
+                    tension: 0.35,
+                },
+                {
+                    label: 'Q1',
+                    data: q1,
+                    fill: false,
+                    borderColor: `rgba(${rgb},0.25)`,
+                    borderWidth: 1,
+                    borderDash: [3, 3],
+                    pointRadius: 0,
+                    tension: 0.35,
+                },
+                {
+                    label: 'Median',
+                    data: medians,
+                    fill: false,
+                    borderColor: solid,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: solid,
+                    tension: 0.35,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    filter: item => item.datasetIndex === 2,
+                    callbacks: {
+                        label: ctx => {
+                            const s = slots[ctx.dataIndex];
+                            return [
+                                `Median: ${ctx.parsed.y} mg/dL`,
+                                `IQR: ${s.q1}–${s.q3} mg/dL`,
+                                `${s.day_count} day${s.day_count !== 1 ? 's' : ''}`,
+                            ];
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+                y: {
+                    min: yMin,
+                    max: yMax,
+                    title: { display: true, text: 'mg/dL', font: { size: 11 } },
+                    ticks: { stepSize: 20 },
+                },
+            },
+        },
+    });
+}
+
 // ─── Per-date window detail (for expandable Time Windows rows) ─────────────────
 
 /**
@@ -597,6 +695,13 @@ function initializeCharts() {
     const legacyPatterns = typeof patterns !== 'undefined' ? patterns : [];
     createDailyPatternCharts(legacyPatterns, bp);
     createBehavioralPatternsLineChart('behavioralPatternsChart', bp);
+
+    const rt = typeof recurringTrends !== 'undefined' ? recurringTrends : null;
+    if (rt && !rt.insufficient_data && Array.isArray(rt.trends)) {
+        rt.trends.forEach((trend, i) => {
+            createRecurringTrendChart(`recurringTrendChart_${i + 1}`, trend);
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
