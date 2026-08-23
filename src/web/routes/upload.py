@@ -23,6 +23,7 @@ from cgm_insights.analytics.anomaly_detection import analyze_anomalies
 from cgm_insights.analytics.behavioral_patterns import analyze_behavioral_patterns
 from cgm_insights.analytics.overnight_patterns import analyze_overnight_patterns
 from cgm_insights.analytics.recurring_trends import analyze_recurring_trends
+from cgm_insights.analytics.steep_changes import analyze_steep_changes
 from cgm_insights.ingestion import exclude_warmup_period, get_parser
 
 router = APIRouter()
@@ -144,6 +145,7 @@ async def _analyze_and_store(
         overnight_result = analyze_overnight_patterns(readings)
         anomaly_result = analyze_anomalies(readings)
         recurring_result = analyze_recurring_trends(readings)
+        steep_result = analyze_steep_changes(readings)
 
         raw_readings = _downsample_to_5min(readings)
 
@@ -157,6 +159,7 @@ async def _analyze_and_store(
             overnight_patterns=overnight_result.model_dump(),
             anomaly_detection=anomaly_result.model_dump(),
             recurring_trends=recurring_result.model_dump(),
+            steep_changes=steep_result.model_dump(),
         )
         return session_id
 

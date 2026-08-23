@@ -632,6 +632,77 @@ function computeWindowDetails(bucketStart, windowMin, dayType) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Render a grouped bar chart showing steep rise/drop counts by hour of day.
+ *
+ * @param {string} canvasId       - id of the <canvas> element
+ * @param {Object} steepChanges   - SteepChangesResult dict from steepChanges global
+ */
+function createSteepChangesChart(canvasId, steepChanges) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const labels = Array.from({length: 24}, (_, h) => {
+        const period = h < 12 ? 'AM' : 'PM';
+        const h12 = h % 12 || 12;
+        return `${h12} ${period}`;
+    });
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Rises ↑',
+                    data: steepChanges.rises_by_hour,
+                    backgroundColor: 'rgba(248,113,113,0.75)',  // red-400
+                    borderColor: 'rgba(248,113,113,1)',
+                    borderWidth: 1,
+                    borderRadius: 2,
+                },
+                {
+                    label: 'Drops ↓',
+                    data: steepChanges.drops_by_hour,
+                    backgroundColor: 'rgba(99,102,241,0.75)',   // indigo-500
+                    borderColor: 'rgba(99,102,241,1)',
+                    borderWidth: 1,
+                    borderRadius: 2,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 },
+                    title: { display: true, text: 'Events' },
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                },
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { boxWidth: 14, padding: 10, font: { size: 11 } },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: item => `${item.dataset.label}: ${item.raw}`,
+                    },
+                },
+            },
+        },
+    });
+}
+
 function initializeCharts() {
     if (typeof tirData !== 'undefined' && tirData) {
         createTIRChart('tirChart', tirData);
@@ -651,6 +722,11 @@ function initializeCharts() {
         rt.trends.forEach((trend, i) => {
             createRecurringTrendChart(`recurringTrendChart_${i + 1}`, trend);
         });
+    }
+
+    const sc = typeof steepChanges !== 'undefined' ? steepChanges : null;
+    if (sc && !sc.insufficient_data && (sc.total_rises + sc.total_drops) > 0) {
+        createSteepChangesChart('steepChangesChart', sc);
     }
 }
 

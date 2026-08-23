@@ -1,0 +1,73 @@
+{% if steep_changes and not steep_changes.get('insufficient_data') %}
+<div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+        <h3 class="card-title text-lg">Steep Glucose Changes</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+            Rises or drops of more than {{ steep_changes.threshold_mg_dl | int }} mg/dL within 30 minutes, across
+            {{ steep_changes.days_analyzed }} days analyzed.
+        </p>
+
+        {% set total = steep_changes.total_rises + steep_changes.total_drops %}
+
+        {% if total == 0 %}
+        <!-- No events — positive result -->
+        <div class="flex items-center gap-3 py-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-success shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="font-semibold text-success">No steep changes detected</p>
+                <p class="text-sm text-base-content/60">Glucose levels remained stable throughout this period — no single 30-minute window showed a swing above {{ steep_changes.threshold_mg_dl | int }} mg/dL.</p>
+            </div>
+        </div>
+
+        {% else %}
+
+        <!-- Summary stat row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div class="bg-base-200 rounded-lg p-3 text-center">
+                <p class="text-2xl font-bold text-error">{{ steep_changes.total_rises }}</p>
+                <p class="text-xs text-base-content/60 mt-0.5">Steep rises</p>
+            </div>
+            <div class="bg-base-200 rounded-lg p-3 text-center">
+                <p class="text-2xl font-bold text-info">{{ steep_changes.total_drops }}</p>
+                <p class="text-xs text-base-content/60 mt-0.5">Steep drops</p>
+            </div>
+            <div class="bg-base-200 rounded-lg p-3 text-center">
+                <p class="text-2xl font-bold">{{ steep_changes.avg_rises_per_day }}</p>
+                <p class="text-xs text-base-content/60 mt-0.5">Avg rises / day</p>
+            </div>
+            <div class="bg-base-200 rounded-lg p-3 text-center">
+                <p class="text-2xl font-bold">{{ steep_changes.avg_drops_per_day }}</p>
+                <p class="text-xs text-base-content/60 mt-0.5">Avg drops / day</p>
+            </div>
+        </div>
+
+        <!-- By-hour frequency chart -->
+        <div style="height: 180px; position: relative;">
+            <canvas id="steepChangesChart"></canvas>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center gap-5 mt-2 text-xs text-base-content/50">
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-sm bg-red-400 opacity-80"></span>
+                Rises (↑)
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-sm bg-indigo-400 opacity-80"></span>
+                Drops (↓)
+            </span>
+        </div>
+
+        {% if steep_changes.max_rises_in_day > 0 or steep_changes.max_drops_in_day > 0 %}
+        <p class="text-xs text-base-content/40 mt-2">
+            Peak day: up to {{ steep_changes.max_rises_in_day }} rise{{ 's' if steep_changes.max_rises_in_day != 1 else '' }}
+            and {{ steep_changes.max_drops_in_day }} drop{{ 's' if steep_changes.max_drops_in_day != 1 else '' }} in a single day.
+        </p>
+        {% endif %}
+
+        {% endif %}
+    </div>
+</div>
+{% endif %}

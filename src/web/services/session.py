@@ -32,6 +32,7 @@ class SessionData:
     overnight_patterns: Optional[dict] = field(default=None)
     anomaly_detection: Optional[dict] = field(default=None)
     recurring_trends: Optional[dict] = field(default=None)
+    steep_changes: Optional[dict] = field(default=None)
     source_url: Optional[str] = field(default=None)
 
 
@@ -55,6 +56,7 @@ class SessionStore:
         overnight_patterns: Optional[dict] = None,
         anomaly_detection: Optional[dict] = None,
         recurring_trends: Optional[dict] = None,
+        steep_changes: Optional[dict] = None,
         source_url: Optional[str] = None,
     ) -> None:
         """Store analysis results for a session.
@@ -76,6 +78,7 @@ class SessionStore:
             overnight_patterns=overnight_patterns,
             anomaly_detection=anomaly_detection,
             recurring_trends=recurring_trends,
+            steep_changes=steep_changes,
             source_url=source_url,
         )
 

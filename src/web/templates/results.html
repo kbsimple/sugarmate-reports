@@ -155,6 +155,13 @@
         {% endwith %}
     </div>
 
+    <!-- Steep Changes -->
+    <div class="mb-6">
+        {% with steep_changes=steep_changes %}
+        {% include 'components/steep_changes.html' %}
+        {% endwith %}
+    </div>
+
     <!-- Behavioral Patterns (Phase 4) -->
     <div class="mb-6">
         {% with behavioral_patterns=behavioral_patterns %}
@@ -214,6 +221,7 @@ const glucoseDateRange = {{ glucose_date_range | tojson }};
 const patterns = {{ patterns | tojson }};
 const behavioralPatterns = {{ behavioral_patterns | tojson }};
 const recurringTrends = {{ recurring_trends | tojson }};
+const steepChanges = {{ steep_changes | tojson }};
 </script>
 <script src="/static/js/charts.js"></script>
 {% endblock %}
